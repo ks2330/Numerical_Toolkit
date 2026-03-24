@@ -1,0 +1,8 @@
+[
+{
+  "directory": "C:/Users/Kush/Documents/Projects/NumericalToolkit/build",
+  "command": "C:\\msys64\\mingw64\\bin\\g++.exe -IC:/Users/Kush/Documents/Projects/NumericalToolkit/external/Eigen -IC:/Users/Kush/Documents/Projects/NumericalToolkit/external/eigen -g -std=gnu++20 -fmodules-ts -fmodule-mapper=apps\\lid_driven_cavity\\CMakeFiles\\lid_driven_cavity.dir\\main.cpp.obj.modmap -MD -fdeps-format=p1689r5 -x c++ -o apps\\lid_driven_cavity\\CMakeFiles\\lid_driven_cavity.dir\\main.cpp.obj -c C:\\Users\\Kush\\Documents\\Projects\\NumericalToolkit\\apps\\lid_driven_cavity\\main.cpp",
+  "file": "C:\\Users\\Kush\\Documents\\Projects\\NumericalToolkit\\apps\\lid_driven_cavity\\main.cpp",
+  "output": "apps\\lid_driven_cavity\\CMakeFiles\\lid_driven_cavity.dir\\main.cpp.obj"
+}
+]
