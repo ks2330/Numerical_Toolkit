@@ -1,5 +1,0 @@
-C:/Users/Kush/Documents/Projects/NumericalToolkit/build/CMakeFiles/edit_cache.dir
-C:/Users/Kush/Documents/Projects/NumericalToolkit/build/CMakeFiles/rebuild_cache.dir
-C:/Users/Kush/Documents/Projects/NumericalToolkit/build/apps/lid_driven_cavity/CMakeFiles/lid_driven_cavity.dir
-C:/Users/Kush/Documents/Projects/NumericalToolkit/build/apps/lid_driven_cavity/CMakeFiles/edit_cache.dir
-C:/Users/Kush/Documents/Projects/NumericalToolkit/build/apps/lid_driven_cavity/CMakeFiles/rebuild_cache.dir

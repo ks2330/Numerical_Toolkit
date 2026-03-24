@@ -7,3 +7,15 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 include_directories(external/Eigen)
 
 add_subdirectory(apps/lid_driven_cavity)
+
+# Enable testing and fetch Google Test
+enable_testing()
+include(FetchContent)
+FetchContent_Declare(
+  googletest
+  GIT_REPOSITORY https://github.com/google/googletest.git
+  GIT_TAG        v1.14.0
+)
+FetchContent_MakeAvailable(googletest)
+
+add_subdirectory(tests)
