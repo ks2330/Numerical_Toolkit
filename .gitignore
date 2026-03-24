@@ -39,3 +39,20 @@
 
 # debug information files
 *.dwo
+
+# Ignore log files
+*.log
+
+# Ignore build directories
+build/
+
+# Ignore CMake files
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+
+# Ignore executable files
+lid_driven_cavity
+
+# Ignore temporary folder
+temp/
