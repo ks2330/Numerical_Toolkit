@@ -3,3 +3,8 @@ C:/Users/Kush/Documents/Projects/NumericalToolkit/build/CMakeFiles/rebuild_cache
 C:/Users/Kush/Documents/Projects/NumericalToolkit/build/apps/lid_driven_cavity/CMakeFiles/lid_driven_cavity.dir
 C:/Users/Kush/Documents/Projects/NumericalToolkit/build/apps/lid_driven_cavity/CMakeFiles/edit_cache.dir
 C:/Users/Kush/Documents/Projects/NumericalToolkit/build/apps/lid_driven_cavity/CMakeFiles/rebuild_cache.dir
+C:/Users/Kush/Documents/Projects/NumericalToolkit/build/apps/1d_heat_equation/CMakeFiles/1d_heat_equation.dir
+C:/Users/Kush/Documents/Projects/NumericalToolkit/build/apps/1d_heat_equation/CMakeFiles/edit_cache.dir
+C:/Users/Kush/Documents/Projects/NumericalToolkit/build/apps/1d_heat_equation/CMakeFiles/rebuild_cache.dir
+C:/Users/Kush/Documents/Projects/NumericalToolkit/build/_deps/fkyaml-build/CMakeFiles/edit_cache.dir
+C:/Users/Kush/Documents/Projects/NumericalToolkit/build/_deps/fkyaml-build/CMakeFiles/rebuild_cache.dir

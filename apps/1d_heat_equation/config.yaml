@@ -1,0 +1,11 @@
+Rod_Length: 5
+Initial_Temperature: 100
+Boundary_Conditions:
+  - Type: Dirichlet
+    Value: 0
+  - Type: Dirichlet
+    Value: 0
+Time_Step: 0.01
+Total_Time: 1.0
+Space_Step: 0.1
+Thermal_Diffusivity: 0.01

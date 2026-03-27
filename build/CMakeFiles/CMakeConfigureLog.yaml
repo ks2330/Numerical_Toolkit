@@ -294,3 +294,37 @@ events:
       
       
 ...
+
+---
+events:
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "C:/ST/STM32CubeCLT_1.20.0/CMake/share/cmake-3.28/Modules/Internal/CheckSourceCompiles.cmake:101 (try_compile)"
+      - "C:/ST/STM32CubeCLT_1.20.0/CMake/share/cmake-3.28/Modules/Internal/CheckCompilerFlag.cmake:18 (cmake_check_source_compiles)"
+      - "C:/ST/STM32CubeCLT_1.20.0/CMake/share/cmake-3.28/Modules/CheckCXXCompilerFlag.cmake:34 (cmake_check_compiler_flag)"
+      - "build/_deps/catch2-src/CMake/CatchMiscFunctions.cmake:12 (check_cxx_compiler_flag)"
+      - "build/_deps/catch2-src/CMake/CatchMiscFunctions.cmake:119 (add_cxx_flag_if_supported_to_targets)"
+      - "build/_deps/catch2-src/src/CMakeLists.txt:342 (add_build_reproducibility_settings)"
+    checks:
+      - "Performing Test HAVE_FLAG__ffile_prefix_map_C__Users_Kush_Documents_Projects_NumericalToolkit_build__deps_catch2_src__"
+    directories:
+      source: "C:/Users/Kush/Documents/Projects/NumericalToolkit/build/CMakeFiles/CMakeScratch/TryCompile-266cou"
+      binary: "C:/Users/Kush/Documents/Projects/NumericalToolkit/build/CMakeFiles/CMakeScratch/TryCompile-266cou"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+      CMAKE_MODULE_PATH: "C:/Users/Kush/Documents/Projects/NumericalToolkit/build/_deps/catch2-src/extras;C:/Users/Kush/Documents/Projects/NumericalToolkit/build/_deps/catch2-src/CMake"
+    buildResult:
+      variable: "HAVE_FLAG__ffile_prefix_map_C__Users_Kush_Documents_Projects_NumericalToolkit_build__deps_catch2_src__"
+      cached: true
+      stdout: |
+        Change Dir: 'C:/Users/Kush/Documents/Projects/NumericalToolkit/build/CMakeFiles/CMakeScratch/TryCompile-266cou'
+        
+        Run Build Command(s): C:/ST/STM32CubeCLT_1.20.0/Ninja/bin/ninja.exe -v cmTC_16e11
+        [1/2] C:\\msys64\\mingw64\\bin\\g++.exe -DHAVE_FLAG__ffile_prefix_map_C__Users_Kush_Documents_Projects_NumericalToolkit_build__deps_catch2_src__  -std=gnu++20   -ffile-prefix-map=C:/Users/Kush/Documents/Projects/NumericalToolkit/build/_deps/catch2-src/= -o CMakeFiles/cmTC_16e11.dir/src.cxx.obj -c C:/Users/Kush/Documents/Projects/NumericalToolkit/build/CMakeFiles/CMakeScratch/TryCompile-266cou/src.cxx
+        [2/2] C:\\Windows\\system32\\cmd.exe /C "cd . && C:\\msys64\\mingw64\\bin\\g++.exe   CMakeFiles/cmTC_16e11.dir/src.cxx.obj -o cmTC_16e11.exe -Wl,--out-implib,libcmTC_16e11.dll.a -Wl,--major-image-version,0,--minor-image-version,0  -lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32 && cd ."
+        
+      exitCode: 0
+...
