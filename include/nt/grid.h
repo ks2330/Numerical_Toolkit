@@ -1,5 +1,5 @@
 
-namespace nt::math
+namespace nt
 {
     class Grid;
 }

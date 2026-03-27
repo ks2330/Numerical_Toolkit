@@ -1,6 +1,6 @@
 #include "grid.h"
 
-namespace nt::math
+namespace nt
 {
     class Grid
     {
