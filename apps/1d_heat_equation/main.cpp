@@ -4,6 +4,7 @@
 #include "nt/build_matrix.h"
 #include "nt/grid.h"
 #include "nt/init_matrix.h"
+#include "nt/p_cal.h"
 
 // Use constexpr for true compile-time constants.
 constexpr int N = 5;      // Number of points
@@ -12,6 +13,10 @@ constexpr double U0 = 0.0; // Initial temperature at the first point (boundary c
 constexpr double U1 = 100.0; // Initial temperature at interior points
 constexpr double UL = 0.0; // Initial temperature at the last point (boundary condition)
 
+constexpr double k = 0.5;   // Thermal conductivity
+constexpr double rho = 1.0; // Density of the material
+constexpr double cp = 1.0; // Specific heat capacity
+constexpr double dt = 0.1; // Time step size
 
 int main() {
 
@@ -27,6 +32,12 @@ int main() {
     Eigen::SparseMatrix<double> A = nt::matrix::build_matrix(grid, triplets);
     std::cout << "Sparse Matrix A:" << std::endl;
     std::cout << A << std::endl;
+
+    std::cout << "--- Setting Up Coefficients. ---" << std::endl;
+    double alpha = nt::nm::alpha_value(k, rho, cp);
+    double p = nt::nm::p_value(alpha, dt, grid.dx());
+    std::cout << "Alpha (thermal diffusivity): " << alpha << std::endl;
+    std::cout << "P value (stability parameter): " << p << std::endl;
 
     
     return 0;
