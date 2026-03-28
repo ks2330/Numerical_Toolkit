@@ -19,6 +19,7 @@ add_library(numerical_toolkit
     include/nt/build_matrix.cpp
     include/nt/init_matrix.cpp
     include/nt/p_cal.cpp
+    include/nt/forward_euler.cpp
 )
 
 # This tells any target linking to 'numerical_toolkit' to also:
