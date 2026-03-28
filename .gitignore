@@ -1,58 +1,37 @@
-# Prerequisites
-*.d
+# Build output
+build/
+
+# CMake generated files
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+compile_commands.json
 
 # Compiled Object files
-*.slo
-*.lo
 *.o
 *.obj
+*.slo
+*.lo
 
 # Precompiled Headers
 *.gch
 *.pch
 
-# Linker files
-*.ilk
-
-# Debugger Files
-*.pdb
-
-# Compiled Dynamic libraries
+# Libraries and executables
+*.lib
+*.a
 *.so
 *.dylib
 *.dll
-
-# Fortran module files
-*.mod
-*.smod
-
-# Compiled Static libraries
-*.lai
-*.la
-*.a
-*.lib
-
-# Executables
 *.exe
 *.out
 *.app
 
-# debug information files
-*.dwo
-
-# Ignore log files
+# Other generated files
+*.d
+*.ilk
+*.pdb
 *.log
 
-# Ignore build directories
-build/
-
-# Ignore CMake files
-CMakeFiles/
-CMakeCache.txt
-cmake_install.cmake
-
-# Ignore executable files
-lid_driven_cavity
-
-# Ignore temporary folder
-temp/
+# VS Code specific
+.vscode/
