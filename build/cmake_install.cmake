@@ -39,7 +39,7 @@ endif()
 
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for the subdirectory.
-  include("C:/Users/kusha/Desktop/Projects/Cpp/Numerical_Toolkit/build/apps/lid_driven_cavity/cmake_install.cmake")
+  include("C:/Users/kusha/Desktop/Projects/Cpp/Numerical_Toolkit/build/external/Eigen/cmake_install.cmake")
 endif()
 
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
@@ -50,6 +50,16 @@ endif()
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for the subdirectory.
   include("C:/Users/kusha/Desktop/Projects/Cpp/Numerical_Toolkit/build/tests/cmake_install.cmake")
+endif()
+
+if(NOT CMAKE_INSTALL_LOCAL_ONLY)
+  # Include the install script for the subdirectory.
+  include("C:/Users/kusha/Desktop/Projects/Cpp/Numerical_Toolkit/build/apps/lid_driven_cavity/cmake_install.cmake")
+endif()
+
+if(NOT CMAKE_INSTALL_LOCAL_ONLY)
+  # Include the install script for the subdirectory.
+  include("C:/Users/kusha/Desktop/Projects/Cpp/Numerical_Toolkit/build/apps/1d_heat_equation/cmake_install.cmake")
 endif()
 
 string(REPLACE ";" "\n" CMAKE_INSTALL_MANIFEST_CONTENT

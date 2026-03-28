@@ -1,5 +1,5 @@
 #include <iostream>
-#include <Eigen/Dense>
+#include <eigen/Dense>
 
 int main() {
     std::cout << "--- Numerical Toolkit: Navier-Stokes Solver ---" << std::endl;
