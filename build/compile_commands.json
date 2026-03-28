@@ -1,8 +1,38 @@
 [
 {
-  "directory": "C:/Users/Kush/Documents/Projects/NumericalToolkit/build",
-  "command": "C:\\msys64\\mingw64\\bin\\g++.exe -IC:/Users/Kush/Documents/Projects/NumericalToolkit/external/Eigen -IC:/Users/Kush/Documents/Projects/NumericalToolkit/external/eigen -g -std=gnu++20 -fmodules-ts -fmodule-mapper=apps\\lid_driven_cavity\\CMakeFiles\\lid_driven_cavity.dir\\main.cpp.obj.modmap -MD -fdeps-format=p1689r5 -x c++ -o apps\\lid_driven_cavity\\CMakeFiles\\lid_driven_cavity.dir\\main.cpp.obj -c C:\\Users\\Kush\\Documents\\Projects\\NumericalToolkit\\apps\\lid_driven_cavity\\main.cpp",
-  "file": "C:\\Users\\Kush\\Documents\\Projects\\NumericalToolkit\\apps\\lid_driven_cavity\\main.cpp",
-  "output": "apps\\lid_driven_cavity\\CMakeFiles\\lid_driven_cavity.dir\\main.cpp.obj"
+  "directory": "C:/Users/kusha/Desktop/Projects/Cpp/Numerical_Toolkit/build/apps/lid_driven_cavity",
+  "command": "C:\\msys64\\mingw64\\bin\\g++.exe  @CMakeFiles/lid_driven_cavity.dir/includes_CXX.rsp -g -std=gnu++20 -o CMakeFiles\\lid_driven_cavity.dir\\main.cpp.obj -c C:\\Users\\kusha\\Desktop\\Projects\\Cpp\\Numerical_Toolkit\\apps\\lid_driven_cavity\\main.cpp",
+  "file": "C:/Users/kusha/Desktop/Projects/Cpp/Numerical_Toolkit/apps/lid_driven_cavity/main.cpp",
+  "output": "apps/lid_driven_cavity/CMakeFiles/lid_driven_cavity.dir/main.cpp.obj"
+},
+{
+  "directory": "C:/Users/kusha/Desktop/Projects/Cpp/Numerical_Toolkit/build/_deps/googletest-build/googlemock",
+  "command": "C:\\msys64\\mingw64\\bin\\g++.exe  @CMakeFiles/gmock.dir/includes_CXX.rsp -g -std=c++20 -Wall -Wshadow -Wundef -Wno-error=dangling-else -DGTEST_HAS_PTHREAD=0 -fexceptions -Wextra -Wno-unused-parameter -Wno-missing-field-initializers -o CMakeFiles\\gmock.dir\\src\\gmock-all.cc.obj -c C:\\Users\\kusha\\Desktop\\Projects\\Cpp\\Numerical_Toolkit\\build\\_deps\\googletest-src\\googlemock\\src\\gmock-all.cc",
+  "file": "C:/Users/kusha/Desktop/Projects/Cpp/Numerical_Toolkit/build/_deps/googletest-src/googlemock/src/gmock-all.cc",
+  "output": "_deps/googletest-build/googlemock/CMakeFiles/gmock.dir/src/gmock-all.cc.obj"
+},
+{
+  "directory": "C:/Users/kusha/Desktop/Projects/Cpp/Numerical_Toolkit/build/_deps/googletest-build/googlemock",
+  "command": "C:\\msys64\\mingw64\\bin\\g++.exe  @CMakeFiles/gmock_main.dir/includes_CXX.rsp -g -std=c++20 -Wall -Wshadow -Wundef -Wno-error=dangling-else -DGTEST_HAS_PTHREAD=0 -fexceptions -Wextra -Wno-unused-parameter -Wno-missing-field-initializers -o CMakeFiles\\gmock_main.dir\\src\\gmock_main.cc.obj -c C:\\Users\\kusha\\Desktop\\Projects\\Cpp\\Numerical_Toolkit\\build\\_deps\\googletest-src\\googlemock\\src\\gmock_main.cc",
+  "file": "C:/Users/kusha/Desktop/Projects/Cpp/Numerical_Toolkit/build/_deps/googletest-src/googlemock/src/gmock_main.cc",
+  "output": "_deps/googletest-build/googlemock/CMakeFiles/gmock_main.dir/src/gmock_main.cc.obj"
+},
+{
+  "directory": "C:/Users/kusha/Desktop/Projects/Cpp/Numerical_Toolkit/build/_deps/googletest-build/googletest",
+  "command": "C:\\msys64\\mingw64\\bin\\g++.exe  @CMakeFiles/gtest.dir/includes_CXX.rsp -g -std=c++20 -Wall -Wshadow -Wundef -Wno-error=dangling-else -DGTEST_HAS_PTHREAD=0 -fexceptions -Wextra -Wno-unused-parameter -Wno-missing-field-initializers -o CMakeFiles\\gtest.dir\\src\\gtest-all.cc.obj -c C:\\Users\\kusha\\Desktop\\Projects\\Cpp\\Numerical_Toolkit\\build\\_deps\\googletest-src\\googletest\\src\\gtest-all.cc",
+  "file": "C:/Users/kusha/Desktop/Projects/Cpp/Numerical_Toolkit/build/_deps/googletest-src/googletest/src/gtest-all.cc",
+  "output": "_deps/googletest-build/googletest/CMakeFiles/gtest.dir/src/gtest-all.cc.obj"
+},
+{
+  "directory": "C:/Users/kusha/Desktop/Projects/Cpp/Numerical_Toolkit/build/_deps/googletest-build/googletest",
+  "command": "C:\\msys64\\mingw64\\bin\\g++.exe  @CMakeFiles/gtest_main.dir/includes_CXX.rsp -g -std=c++20 -Wall -Wshadow -Wundef -Wno-error=dangling-else -DGTEST_HAS_PTHREAD=0 -fexceptions -Wextra -Wno-unused-parameter -Wno-missing-field-initializers -o CMakeFiles\\gtest_main.dir\\src\\gtest_main.cc.obj -c C:\\Users\\kusha\\Desktop\\Projects\\Cpp\\Numerical_Toolkit\\build\\_deps\\googletest-src\\googletest\\src\\gtest_main.cc",
+  "file": "C:/Users/kusha/Desktop/Projects/Cpp/Numerical_Toolkit/build/_deps/googletest-src/googletest/src/gtest_main.cc",
+  "output": "_deps/googletest-build/googletest/CMakeFiles/gtest_main.dir/src/gtest_main.cc.obj"
+},
+{
+  "directory": "C:/Users/kusha/Desktop/Projects/Cpp/Numerical_Toolkit/build/tests",
+  "command": "C:\\msys64\\mingw64\\bin\\g++.exe  @CMakeFiles/matrix_test.dir/includes_CXX.rsp -g -std=gnu++20 -o CMakeFiles\\matrix_test.dir\\test_matrix.cpp.obj -c C:\\Users\\kusha\\Desktop\\Projects\\Cpp\\Numerical_Toolkit\\tests\\test_matrix.cpp",
+  "file": "C:/Users/kusha/Desktop/Projects/Cpp/Numerical_Toolkit/tests/test_matrix.cpp",
+  "output": "tests/CMakeFiles/matrix_test.dir/test_matrix.cpp.obj"
 }
 ]
