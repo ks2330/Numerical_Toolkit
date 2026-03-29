@@ -8,37 +8,40 @@ namespace nt::fe
 
     Eigen::SparseMatrix<double> setup_forward_coefficients(int N)
     {
-        Eigen::SparseMatrix<double> A(N, N);
+        Eigen::SparseMatrix<double> laplacian(N, N);
         std::vector<Eigen::Triplet<double>> triplets;
-        triplets.reserve(3 * N - 2);
-
-        for (int i = 0; i < N; i++) {
-            // Only apply the Laplacian stencil to INTERIOR nodes
-            if (i > 0 && i < N - 1) {
-                // Main diagonal
-                triplets.push_back(Eigen::Triplet<double>(i, i, -2.0));
-                // Super-diagonal
-                triplets.push_back(Eigen::Triplet<double>(i, i + 1, 1.0));
-                // Sub-diagonal
-                triplets.push_back(Eigen::Triplet<double>(i, i - 1, 1.0));
-            }
-            // Rows 0 and N-1 are left empty (implicitly all zeros)
+        // Reserve space for the triplets: 3 for each of the N-2 interior points.
+        if (N > 2) {
+            triplets.reserve(3 * (N - 2));
         }
 
-        A.setFromTriplets(triplets.begin(), triplets.end());
-        return A;
+        // The 1D Laplacian stencil [1, -2, 1] is applied to interior nodes only.
+        // For Dirichlet boundary conditions, the first and last rows of the
+        // Laplacian matrix are zero, which keeps the boundary values constant during time-stepping.
+        for (int i = 1; i < N - 1; ++i) {
+            triplets.emplace_back(i, i - 1, 1.0);    // Sub-diagonal
+            triplets.emplace_back(i, i, -2.0);       // Main diagonal
+            triplets.emplace_back(i, i + 1, 1.0);    // Super-diagonal
+        }
+
+        laplacian.setFromTriplets(triplets.begin(), triplets.end());
+        return laplacian;
     }
 
 
-    Eigen::VectorXd forward_euler_step(const Eigen::SparseMatrix<double>& Lv,  Eigen::VectorXd u_l, double p, int max_steps)
+    // This function simulates the system for multiple time steps.
+    // A name like 'solve_forward_euler' might be more descriptive.
+    Eigen::VectorXd solve_forward_euler(const Eigen::SparseMatrix<double>& Lv, Eigen::VectorXd u_current, double p, int max_steps)
     {
-        Eigen::VectorXd u_next(u_l.size());
+        // u_current is passed by value, so we can modify it freely inside the function.
+        Eigen::VectorXd u_next(u_current.size());
         for (int step = 0; step < max_steps; ++step) {
-            u_next = u_l + p * (Lv * u_l);
-            u_l = u_next;
-            std::cout << "Step " << step + 1 << ": " << u_next.transpose() << std::endl;
+            // The Forward Euler update equation for u_t = alpha * u_xx is u_{n+1} = u_n + dt * alpha / dx^2 * (D_xx * u_n)
+            // Here, p = dt * alpha / dx^2 and Lv is the discrete Laplacian D_xx.
+            u_next = u_current + p * (Lv * u_current);
+            u_current = u_next;
         }
-        return u_l;
+        return u_current;
     }
 
 }

@@ -12,14 +12,22 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-modules-ts")
 endif()
 
-# --- Define the Toolkit Library ---
-# This creates a static library named 'numerical_toolkit' that other executables can link to.
-add_library(numerical_toolkit
-    src/nt/grid.cpp
+
+add_library(numerical_toolkit)
+
+# The 'file(GLOB_RECURSE ... "src/*.cpp")' command you had would not find the
+# source files in subdirectories like 'src/nt'.
+#
+# While you could fix this with a pattern like "src/**/*.cpp", it is much more
+# robust to list source files explicitly. This ensures that your build system
+# is correctly updated when you add or remove files.
+target_sources(numerical_toolkit PRIVATE
     src/nt/build_matrix.cpp
+    src/nt/forward_euler.cpp
+    src/nt/grid.cpp
     src/nt/init_matrix.cpp
     src/nt/p_cal.cpp
-    src/nt/forward_euler.cpp
+    src/app_support/app_forward_euler.cpp
 )
 
 # This tells any target linking to 'numerical_toolkit' to also:
@@ -31,6 +39,7 @@ target_include_directories(numerical_toolkit PUBLIC
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src>
     $<INSTALL_INTERFACE:src>
 )
+
 target_link_libraries(numerical_toolkit PUBLIC Eigen3::Eigen)
 
 
