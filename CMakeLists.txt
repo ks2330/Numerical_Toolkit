@@ -15,11 +15,11 @@ endif()
 # --- Define the Toolkit Library ---
 # This creates a static library named 'numerical_toolkit' that other executables can link to.
 add_library(numerical_toolkit
-    include/nt/grid.cpp
-    include/nt/build_matrix.cpp
-    include/nt/init_matrix.cpp
-    include/nt/p_cal.cpp
-    include/nt/forward_euler.cpp
+    src/nt/grid.cpp
+    src/nt/build_matrix.cpp
+    src/nt/init_matrix.cpp
+    src/nt/p_cal.cpp
+    src/nt/forward_euler.cpp
 )
 
 # This tells any target linking to 'numerical_toolkit' to also:
@@ -28,6 +28,8 @@ add_library(numerical_toolkit
 target_include_directories(numerical_toolkit PUBLIC
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include>
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src>
+    $<INSTALL_INTERFACE:src>
 )
 target_link_libraries(numerical_toolkit PUBLIC Eigen3::Eigen)
 

@@ -19,6 +19,8 @@ constexpr double rho = 1000; // Density of the material
 constexpr double cp = 10.0; // Specific heat capacity
 constexpr double dt = (10/3.0); // Time step size
 
+constexpr int max_steps = 6; // Maximum number of time steps for the forward Euler method
+
 int main() {
     
     std::cout << "--- New Spacing Function ---" << std::endl;
@@ -30,11 +32,12 @@ int main() {
     std::cout << "\n--- Build Matrix ---" << std::endl;
     std::vector<Eigen::Triplet<double>> triplets = nt::setup::init_matrix(N, U1, U0, UL);
 
+    std::cout << "Triplets for initial conditions:" << std::endl;
     Eigen::SparseMatrix<double> A = nt::matrix::build_matrix(grid, triplets);
     std::cout << "Sparse Matrix A:" << std::endl;
-    std::cout << A << std::endl;
+    std::cout << A.toDense() << std::endl;
 
-    std::cout << "--- Setting Up Coefficients. ---" << std::endl;
+    std::cout << "\n--- Setting Up Coefficients. ---" << std::endl;
     double alpha = nt::nm::alpha_value(k, rho, cp);
     double p = nt::nm::p_value(alpha, dt, grid.dx());
     std::cout << "Alpha (thermal diffusivity): " << alpha << std::endl;
@@ -43,6 +46,16 @@ int main() {
     std::cout << "\n--- Forward Euler Coefficients ---" << std::endl;
     Eigen::SparseMatrix<double> forwardEulerCoeffs = nt::fe::setup_forward_coefficients(N);
     std::cout << "Forward Euler Coefficients:" << std::endl;
-    std::cout << forwardEulerCoeffs << std::endl;
+    std::cout << forwardEulerCoeffs.toDense() << std::endl;
+
+    std::cout << "\n--- Forward Euler Step ---" << std::endl;
+    nt::fe::forward_euler_step(forwardEulerCoeffs, A.row(0), p, max_steps);
+
+
+
+
+
+
+
     return 0;
 }
