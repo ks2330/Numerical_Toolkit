@@ -22,12 +22,21 @@ add_library(numerical_toolkit)
 # robust to list source files explicitly. This ensures that your build system
 # is correctly updated when you add or remove files.
 target_sources(numerical_toolkit PRIVATE
-    src/nt/build_matrix.cpp
-    src/nt/forward_euler.cpp
-    src/nt/grid.cpp
-    src/nt/init_matrix.cpp
-    src/nt/p_cal.cpp
+
+
+    src/nt/setup/build_matrix.cpp
+    src/nt/setup/grid.cpp
+    src/nt/setup/init_matrix.cpp
+    src/nt/setup/p_cal.cpp
+
+
+    src/nt/finite_methods/forward_euler.cpp
+    src/nt/finite_methods/crank_nicholson.cpp
+
+
     src/app_support/app_forward_euler.cpp
+
+    
 )
 
 # This tells any target linking to 'numerical_toolkit' to also:

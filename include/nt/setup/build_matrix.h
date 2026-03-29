@@ -1,6 +1,6 @@
 #pragma once // Prevents the header from being included multiple times
 #include <Eigen/Sparse>
-#include "nt/grid.h"
+#include "nt/setup/grid.h"
 
 namespace nt::matrix
 {

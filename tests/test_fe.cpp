@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 #include <eigen/Sparse>
-#include "nt/forward_euler.h"
+#include "nt/finite_methods/forward_euler.h"
 
 TEST(Forward_Euler_Test, SetupCoeff) {
     int N = 5;

@@ -1,6 +1,6 @@
 #include <Eigen/Sparse>
-#include "nt/build_matrix.h"
-#include "nt/grid.h" // We need the full Grid definition to use its methods
+#include "nt/setup/build_matrix.h"
+#include "nt/setup/grid.h" // We need the full Grid definition to use its methods
 
 
 namespace nt::matrix

@@ -1,4 +1,4 @@
-#include "nt/forward_euler.h"
+#include "nt/finite_methods/forward_euler.h"
 #include "Eigen/Sparse"
 #include <vector>
 #include <iostream>

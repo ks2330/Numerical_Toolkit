@@ -1,11 +1,11 @@
 #include <iostream>
 #include <eigen/Dense>
 #include <fstream>
-#include "nt/build_matrix.h"
-#include "nt/grid.h"
-#include "nt/init_matrix.h"
-#include "nt/p_cal.h"
-#include "nt/forward_euler.h" 
+#include "nt/setup/grid.h"
+#include "nt/setup/init_matrix.h"
+#include "nt/setup/build_matrix.h"
+#include "nt/setup/p_cal.h"
+#include "nt/finite_methods/forward_euler.h" 
 #include "app_support/app_forward_euler.h"
 
 namespace app_support::forward_euler

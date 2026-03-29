@@ -1,11 +1,6 @@
 #include <iostream>
 #include <eigen/Dense>
 #include <fstream>
-#include "nt/build_matrix.h"
-#include "nt/grid.h"
-#include "nt/init_matrix.h"
-#include "nt/p_cal.h"
-#include "nt/forward_euler.h" 
 #include "app_support/app_forward_euler.h"
 
 // Use constexpr for true compile-time constants.

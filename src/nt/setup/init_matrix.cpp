@@ -1,6 +1,6 @@
 #include <Eigen/Dense>
 #include <vector>
-#include "nt/init_matrix.h"
+#include "nt/setup/init_matrix.h"
 
 namespace nt::setup
 {   

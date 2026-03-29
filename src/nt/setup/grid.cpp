@@ -1,4 +1,4 @@
-#include "nt/grid.h"
+#include "nt/setup/grid.h"
 
 namespace nt::matrix
 {
