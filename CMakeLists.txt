@@ -12,31 +12,24 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-modules-ts")
 endif()
 
-
-add_library(numerical_toolkit)
-
 # The 'file(GLOB_RECURSE ... "src/*.cpp")' command you had would not find the
 # source files in subdirectories like 'src/nt'.
 #
 # While you could fix this with a pattern like "src/**/*.cpp", it is much more
 # robust to list source files explicitly. This ensures that your build system
 # is correctly updated when you add or remove files.
-target_sources(numerical_toolkit PRIVATE
-
-
+add_library(numerical_toolkit
     src/nt/setup/build_matrix.cpp
     src/nt/setup/grid.cpp
     src/nt/setup/init_matrix.cpp
     src/nt/setup/p_cal.cpp
 
-
     src/nt/finite_methods/forward_euler.cpp
     src/nt/finite_methods/crank_nicholson.cpp
 
+    src/nt/setup/finite_element_methods/FEM_Global_Stiffness_Matrix.cpp   
 
     src/app_support/app_forward_euler.cpp
-
-    
 )
 
 # This tells any target linking to 'numerical_toolkit' to also:
