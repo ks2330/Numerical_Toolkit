@@ -2,6 +2,7 @@
 #include <eigen/Dense>
 #include <fstream>
 #include "app_support/app_forward_euler.h"
+#include "nt/setup/finite_element_methods/FEM_Global_Stiffness_Matrix.h"
 
 // Use constexpr for true compile-time constants.
 constexpr int N = 5;      // Number of points
@@ -18,7 +19,8 @@ constexpr double dt = (10/3.0); // Time step size
 constexpr int max_steps = 6; // Maximum number of time steps for the forward Euler method
 
 int main() {
-    
+    std::cout << "Running 1D Heat Equation Simulation with Forward Euler Method..." << std::endl;
     app_support::forward_euler::run_forward_euler(N, L, U0, U1, UL, k, rho, cp, dt, max_steps); 
+
     return 0;
 }
