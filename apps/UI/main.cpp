@@ -1,15 +1,16 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
-#include "nt/finite_element_methods/FEM_Global_Stiffness_Matrix.h"
-#include "nt/setup_FEM/setup.h"
+//#include "include/nt/finite_element_methods/FEM_Global_Stiffness_Matrix.h"
+//#include "nt/setup_FEM/setup.h"
+#include "mesh_generation/mesh_generation.h"
 
 /*
 int main() {
     // Solve steady-state Laplace (heat) equation on a 2x6 FEM mesh.
     // Dirichlet BCs: T=100 at x=0 (left wall), T=0 at x=6 (right wall).
     // Neumann (zero flux) BCs on top and bottom — satisfied naturally.
-    // Exact solution: T(x) = 100*(6-x)/6   (linear in x)
+        // Exact solution: T(x) = 100*(6-x)/6   (linear in x)
 
     nt::fem::Mesh mesh;
     mesh.initialize(6, 2); // nx=6, ny=2 → 21 nodes, 24 triangular elements
@@ -61,7 +62,7 @@ int main() {
 
     return 0;
 }
-*/
+
 
 
 int main() {
@@ -74,7 +75,8 @@ int main() {
     bool isRectangular = false; // Change to false to generate circular mesh
     if (isRectangular) {
     
-        nt::fem::meshgen::ShapeGenerator::generateRectangularMesh(6, 2, nodes);    
+        nt::fem::meshgen::ShapeGenerator::generateRectangularMesh(6, 2, nodes);
+        
         const std::string outputPath = "boundary_nodes_rectangular.csv";
     } else {
         nt::fem::meshgen::ShapeGenerator::generateCircularMesh(1.0, 10, 36, nodes);
@@ -86,6 +88,34 @@ int main() {
         nodesFile << i << ","
                   << nodes[i].x << ","
                   << nodes[i].y << "\n";
+    }
+    nodesFile.close();
+
+    std::cout << "Boundary nodes written to " << outputPath << "\n";
+
+    return 0;
+}
+
+*/
+int main() {
+    std::cout << "This is the UI application for the Numerical Toolkit.\n";
+    std::cout << "Please run the individual test applications to see specific functionalities in action.\n";
+
+    meshgeneration::Mesh mesh;
+    mesh.initialize("rectangle", 6, 2); // nx=6, ny=2 → 21 nodes, 24 triangular elements
+    mesh.generateRandomNodes(10, 6, 2); // Generate 10 random nodes within the rectangle
+
+    const std::string outputPath = "boundary_nodes_rectangular.csv";
+    std::cout << "Generated rectangular mesh with " << mesh.nodes.size() << " nodes.\n";
+    std::cout << mesh.nodes[0].x << ", " << mesh.nodes[0].y << "\n";
+    std::cout << mesh.nodes[1].x << ", " << mesh.nodes[1].y << "\n";
+
+    std::ofstream nodesFile(outputPath);
+    nodesFile << "id,x,y\n";
+    for (size_t i = 0; i < mesh.nodes.size(); ++i) {
+        nodesFile << i << ","
+                  << mesh.nodes[i].x << ","
+                  << mesh.nodes[i].y << "\n";
     }
     nodesFile.close();
 

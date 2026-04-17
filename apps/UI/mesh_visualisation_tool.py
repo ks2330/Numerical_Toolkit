@@ -34,7 +34,7 @@ def read_nodes(path: str):
 
 # ── main ─────────────────────────────────────────────────────────────────────
 def main():
-    path = "Boundary_nodes.csv"
+    path = "Boundary_nodes_rectangular.csv"
 
     if not os.path.exists(path):
         sys.exit(

@@ -1,5 +1,0 @@
-
-namespace nt
-{
-    class Grid;
-}

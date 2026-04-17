@@ -1,9 +1,0 @@
-#include <Eigen/Sparse>
-
-namespace nt::math 
-{
-
-    Eigen::SparseMatrix<double> build_matrix(const nt::Grid& grid)
-
-
-}
