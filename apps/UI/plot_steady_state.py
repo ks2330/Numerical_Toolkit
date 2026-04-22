@@ -95,8 +95,8 @@ def main():
     ax.set_xlabel("x  (m)", fontsize=11)
     ax.set_ylabel("y  (m)", fontsize=11)
     ax.set_aspect("equal")
-    ax.set_xlim(-0.15, 6.15)
-    ax.set_ylim(-0.25, 2.25)
+#    ax.set_xlim(-0.15, 6.15)
+#    ax.set_ylim(-0.25, 2.25)
 
     # Boundary labels
     ax.text(-0.1, 1.0, "T = 100 °C", ha="right", va="center",

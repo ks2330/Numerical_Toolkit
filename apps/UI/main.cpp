@@ -102,8 +102,8 @@ int main() {
     std::cout << "Please run the individual test applications to see specific functionalities in action.\n";
 
     meshgeneration::Mesh mesh;
-    mesh.initialize("rectangle", 6, 2); // nx=6, ny=2 → 21 nodes, 24 triangular elements
-    mesh.generateRandomNodes(10, 6, 2); // Generate 10 random nodes within the rectangle
+    mesh.initialize("rectangle", 6, 2, 8); // nx=6, ny=2 → 21 nodes, 24 triangular elements
+    mesh.generateRandomNodes(30, 6, 2); // Generate 10 random nodes within the rectangle
 
     const std::string outputPath = "boundary_nodes_rectangular.csv";
     std::cout << "Generated rectangular mesh with " << mesh.nodes.size() << " nodes.\n";

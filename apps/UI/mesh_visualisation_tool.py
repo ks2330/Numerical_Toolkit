@@ -23,18 +23,17 @@ import matplotlib.pyplot as plt
 
 
 def read_nodes(path: str):
-    xs, ys, Ts = [], [], []
+    xs, ys = [], []
     with open(path, newline="") as f:
         for row in csv.DictReader(f):
-            Ts.append(float(row["id"]))
             xs.append(float(row["x"]))
             ys.append(float(row["y"]))
-    return np.array(xs), np.array(ys), np.array(Ts)
+    return np.array(xs), np.array(ys)
 
 
 # ── main ─────────────────────────────────────────────────────────────────────
 def main():
-    path = "Boundary_nodes_rectangular.csv"
+    path = "boundary_nodes_rectangular.csv"
 
     if not os.path.exists(path):
         sys.exit(
@@ -42,20 +41,18 @@ def main():
             "Build and run fem_steady_state first to generate the data files."
         )
 
-    x, y, T = read_nodes(path)
+    x, y = read_nodes(path)
 
     # ── figure ───────────────────────────────────────────────────────────────
     fig, ax = plt.subplots(figsize=(11, 4))
 
-    # Overlay mesh skeleton
-    # ax.triplot(color="black", linewidth=0.6, alpha=0.35)
     ax.scatter(
         x,
         y,
-        c=T,
+        c=x,
         cmap="coolwarm",
-        vmin=0,
-        vmax=100,
+        vmin=x.min(),
+        vmax=x.max(),
         s=40,
         edgecolors="black",
         linewidths=0.5,
