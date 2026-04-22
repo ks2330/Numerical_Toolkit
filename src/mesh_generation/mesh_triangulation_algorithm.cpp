@@ -3,7 +3,6 @@
 namespace meshgen::triangulation
 {
 
-
     // This function returns true if Point D is inside the circumcircle of ABC
     bool isInCircle(meshgen::triangulation::Vec2 A, meshgen::triangulation::Vec2 B, meshgen::triangulation::Vec2 C, meshgen::triangulation::Vec2 D) {
         // Translate points so that D is at the origin (0,0)

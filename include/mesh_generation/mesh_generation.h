@@ -15,9 +15,11 @@ namespace meshgeneration {
         double x, y;
     };
 
+
     struct Element {
-        int nodeIDs[3];
+        int nodeIDs[3];   
     };
+
 
     class Mesh {
     public:
@@ -67,6 +69,17 @@ namespace meshgeneration {
                     nodes.push_back({ x, y });
                 }
             }
+        }
+        
+        void generateLargeTriangle(double dim1, double dim2, double dim3) {
+            double sizeFactor = 10.0;
+            double val1 = -1.0 * (dim1 * sizeFactor);
+            double val2 = dim2 + (dim2 * sizeFactor);
+            double val3 = dim3 + (dim3 * sizeFactor);
+
+            nodes.push_back({ val1, val2 });
+            nodes.push_back({ val2, val3 });
+            nodes.push_back({ val3, val1 });
         }
 
     private:
