@@ -6,6 +6,66 @@
 #include "mesh_generation/mesh_generation.h"
 #include "mesh_generation/mesh_triangulation_algorithm.h"
 
+
+int main() {
+    std::cout << "This is the UI application for the Numerical Toolkit.\n";
+    std::cout << "Please run the individual test applications to see specific functionalities in action.\n";
+    meshgeneration::Mesh mesh;
+    mesh.initialize("rectangle", 6, 2, 1); // nx=6, ny=2 → 21 nodes, 24 triangular elements
+    mesh.generateRandomNodes(30, 6, 2); // Generate 10 random nodes within the rectangle
+
+    const std::string outputPath_NODES = "boundary_nodes_rectangular.csv";
+    std::cout << "Generated rectangular mesh with " << mesh.nodes.size() << " nodes.\n";
+
+    std::ofstream nodesFile(outputPath_NODES);
+    nodesFile << "id,x,y\n";
+    for (size_t i = 0; i < mesh.nodes.size(); ++i) {
+        nodesFile << i << ","
+                  << mesh.nodes[i].x << ","
+                  << mesh.nodes[i].y << "\n";
+    }
+    nodesFile.close();
+
+    // Run Bowyer-Watson (currently just returns the initial rectangle split)
+    std::vector<meshgen::triangulation::Vec2> bwPoints;
+    for (const auto& node : mesh.nodes)
+        bwPoints.push_back({node.x, node.y});
+
+    std::vector<meshgen::triangulation::Triangle> triangles =
+        meshgen::triangulation::bowyerWatson(bwPoints, 6.0, 2.0);
+
+    std::ofstream triFile("triangulation.csv");
+    triFile << "ax,ay,bx,by,cx,cy\n";
+    for (const auto& T : triangles)
+        triFile << T.a.x << "," << T.a.y << ","
+                << T.b.x << "," << T.b.y << ","
+                << T.c.x << "," << T.c.y << "\n";
+    triFile.close();
+    std::cout << "Initial triangulation: " << triangles.size() << " triangles written to triangulation.csv\n";
+
+/*
+    
+    std::ofstream circleFile("circumcircles.csv");
+    circleFile << "cx,cy,radius\n";
+    for (const auto& T : triangles) {
+        auto cc = meshgen::triangulation::drawCircle(T.a, T.b, T.c);
+        circleFile << cc.center.x << "," << cc.center.y << "," << cc.radius << "\n";
+    }
+    circleFile.close();
+*/
+
+    return 0;
+}
+
+
+
+
+
+
+
+
+
+
 /*
 int main() {
     // Solve steady-state Laplace (heat) equation on a 2x6 FEM mesh.
@@ -64,88 +124,4 @@ int main() {
     return 0;
 }
 
-
-
-int main() {
-    std::cout << "This is the UI application for the Numerical Toolkit.\n";
-    std::cout << "Please run the individual test applications to see specific functionalities in action.\n";
-    const std::string outputPath;
-
-    std::vector<nt::fem::meshgen::Node> nodes;
-
-    bool isRectangular = false; // Change to false to generate circular mesh
-    if (isRectangular) {
-    
-        nt::fem::meshgen::ShapeGenerator::generateRectangularMesh(6, 2, nodes);
-        
-        const std::string outputPath = "boundary_nodes_rectangular.csv";
-    } else {
-        nt::fem::meshgen::ShapeGenerator::generateCircularMesh(1.0, 10, 36, nodes);
-        const std::string outputPath = "boundary_nodes_circular.csv";
-    }
-    std::ofstream nodesFile(outputPath);
-    nodesFile << "id,x,y\n";
-    for (size_t i = 0; i < nodes.size(); ++i) {
-        nodesFile << i << ","
-                  << nodes[i].x << ","
-                  << nodes[i].y << "\n";
-    }
-    nodesFile.close();
-
-    std::cout << "Boundary nodes written to " << outputPath << "\n";
-
-    return 0;
-}
-
 */
-int main() {
-    std::cout << "This is the UI application for the Numerical Toolkit.\n";
-    std::cout << "Please run the individual test applications to see specific functionalities in action.\n";
-    meshgeneration::Mesh mesh;
-    mesh.initialize("rectangle", 6, 2, 8); // nx=6, ny=2 → 21 nodes, 24 triangular elements
-    mesh.generateRandomNodes(30, 6, 2); // Generate 10 random nodes within the rectangle
-
-    const std::string outputPath_NODES = "boundary_nodes_rectangular.csv";
-    const std::string outputPath_ELEMENTS = "elements_rectangular.csv";
-    const std::string outputPath = "boundary_nodes_circular.csv";
-    std::cout << "Generated rectangular mesh with " << mesh.nodes.size() << " nodes.\n";
-
-    // Generate a large triangle for circumcenter testing
-    std::vector<meshgeneration::Node> triangleNodes = mesh.generateLargeTriangle(1, 1, 1, 10.0);
-    std::cout << "Generated large triangle nodes:\n";
-
-    std::vector<meshgen::triangulation::Vec2> circlePoints = meshgen::triangulation::drawCircle({triangleNodes[0].x, triangleNodes[0].y}, 
-                        {triangleNodes[1].x, triangleNodes[1].y}, 
-                        {triangleNodes[2].x, triangleNodes[2].y}, 100);
-
-    std::ofstream nodesFile(outputPath_NODES);
-    nodesFile << "id,x,y\n";
-    for (size_t i = 0; i < mesh.nodes.size(); ++i) {
-        nodesFile << i << ","
-                  << mesh.nodes[i].x << ","
-                  << mesh.nodes[i].y << "\n";
-    }
-    nodesFile.close();
-
-    std::ofstream elementsFile(outputPath_ELEMENTS);
-    elementsFile << "id,x,y\n";
-    for (size_t i = 0; i < triangleNodes.size(); ++i) {
-        elementsFile << mesh.nodes.size() + i << ","
-                     << triangleNodes[i].x << ","
-                     << triangleNodes[i].y << "\n";
-    }
-    elementsFile.close();
-
-    std::ofstream circleFile(outputPath);
-    circleFile << "id,x,y\n";
-    for (size_t i = 0; i < circlePoints.size(); ++i) {
-        circleFile << mesh.nodes.size() + triangleNodes.size() + i << ","
-                     << circlePoints[i].x << ","
-                  << circlePoints[i].y << "\n";
-    }
-    circleFile.close();
-
-    std::cout << "Boundary nodes written to " << outputPath << "\n";
-
-    return 0;
-}

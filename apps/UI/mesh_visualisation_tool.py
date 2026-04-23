@@ -1,10 +1,9 @@
 """
 Visualise mesh generation output from fem_steady_state.
 
-Plots three datasets in distinct colours:
+Plots:
   - Rectangle boundary + interior nodes  (boundary_nodes_rectangular.csv)
-  - Large triangle nodes                 (elements_rectangular.csv)
-  - Circumcircle points                  (boundary_nodes_circular.csv)
+  - Bowyer-Watson triangulation edges    (triangulation.csv)
 """
 
 import csv
@@ -22,14 +21,44 @@ def read_xy(path: str):
     return np.array(xs), np.array(ys)
 
 
+def draw_triangulation(ax, path):
+    if not os.path.exists(path):
+        print(f"WARNING: '{path}' not found — skipping.")
+        return
+    first = True
+    with open(path, newline="") as f:
+        for row in csv.DictReader(f):
+            xs = [float(row["ax"]), float(row["bx"]), float(row["cx"]), float(row["ax"])]
+            ys = [float(row["ay"]), float(row["by"]), float(row["cy"]), float(row["ay"])]
+            ax.plot(xs, ys, color="purple", linewidth=1.5, alpha=0.7,
+                    label="Triangulation" if first else None)
+            first = False
+
+def draw_circumcircles(ax, path):
+    if not os.path.exists(path):
+        print(f"WARNING: '{path}' not found — skipping.")
+        return
+    first = True
+    with open(path, newline="") as f:
+        for row in csv.DictReader(f):
+            cx = float(row["cx"])
+            cy = float(row["cy"])
+            r  = float(row["radius"])
+            circle = plt.Circle((cx, cy), r, color="orange", fill=False, linewidth=1.2, alpha=0.7,
+                                label="Circumcircles" if first else None)
+            ax.add_patch(circle)
+            first = False
+
+# ── main ─────────────────────────────────────────────────────────────────────
 def main():
     datasets = [
-        ("boundary_nodes_rectangular.csv", "Rectangle nodes",  "steelblue",  40, "o"),
-        ("elements_rectangular.csv",        "Triangle nodes",   "darkorange", 60, "^"),
-        ("boundary_nodes_circular.csv",     "Circumcircle",     "mediumseagreen", 20, "."),
+        ("boundary_nodes_rectangular.csv", "Rectangle nodes", "steelblue", 40, "o"),
     ]
 
     fig, ax = plt.subplots(figsize=(11, 6))
+
+    draw_triangulation(ax, "triangulation.csv")
+    draw_circumcircles(ax, "circumcircles.csv")
 
     for path, label, colour, size, marker in datasets:
         if not os.path.exists(path):
