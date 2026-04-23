@@ -1,28 +1,19 @@
 """
-Visualise the mesh generation produced by fem_steady_state.
+Visualise mesh generation output from fem_steady_state.
 
-Usage
------
-1. Build and run the C++ executable from the project root:
-       cmake --build build
-       ./build/apps/UI/fem_steady_state        (Linux/Mac)
-       build/apps/UI/fem_steady_state.exe       (Windows)
-2. Run this script from the same directory as the generated CSVs:
-       python apps/UI/plot_steady_state.py
-
-Output: steady_state_plot.png saved alongside the CSVs.
+Plots three datasets in distinct colours:
+  - Rectangle boundary + interior nodes  (boundary_nodes_rectangular.csv)
+  - Large triangle nodes                 (elements_rectangular.csv)
+  - Circumcircle points                  (boundary_nodes_circular.csv)
 """
 
 import csv
-import sys
 import os
 import numpy as np
 import matplotlib.pyplot as plt
 
-# ── helpers ─────────────────────────────────────────────────────────────────
 
-
-def read_nodes(path: str):
+def read_xy(path: str):
     xs, ys = [], []
     with open(path, newline="") as f:
         for row in csv.DictReader(f):
@@ -31,82 +22,32 @@ def read_nodes(path: str):
     return np.array(xs), np.array(ys)
 
 
-# ── main ─────────────────────────────────────────────────────────────────────
 def main():
-    path = "boundary_nodes_rectangular.csv"
+    datasets = [
+        ("boundary_nodes_rectangular.csv", "Rectangle nodes",  "steelblue",  40, "o"),
+        ("elements_rectangular.csv",        "Triangle nodes",   "darkorange", 60, "^"),
+        ("boundary_nodes_circular.csv",     "Circumcircle",     "mediumseagreen", 20, "."),
+    ]
 
-    if not os.path.exists(path):
-        sys.exit(
-            f"ERROR: '{path}' not found.\n"
-            "Build and run fem_steady_state first to generate the data files."
-        )
+    fig, ax = plt.subplots(figsize=(11, 6))
 
-    x, y = read_nodes(path)
+    for path, label, colour, size, marker in datasets:
+        if not os.path.exists(path):
+            print(f"WARNING: '{path}' not found — skipping.")
+            continue
+        x, y = read_xy(path)
+        ax.scatter(x, y, c=colour, s=size, marker=marker,
+                   edgecolors="black", linewidths=0.4, zorder=3, label=label)
 
-    # ── figure ───────────────────────────────────────────────────────────────
-    fig, ax = plt.subplots(figsize=(11, 4))
-
-    ax.scatter(
-        x,
-        y,
-        c=x,
-        cmap="coolwarm",
-        vmin=x.min(),
-        vmax=x.max(),
-        s=40,
-        edgecolors="black",
-        linewidths=0.5,
-        zorder=3,
-    )
-
-    # Add Lines between the points to show the mesh structure
-    #    for i in range(len(x)):
-    #        for j in range(i + 1, len(x)):
-    #            if np.isclose(x[i], x[j], atol=0.01) or np.isclose(y[i], y[j], atol=0.01):
-    #                ax.plot(
-    #                    [x[i], x[j]],
-    #                    [y[i], y[j]],
-    #                    color="black",
-    #                    linewidth=1.5,
-    #                    alpha=0.35,
-    #                    zorder=2,
-    #                )
-
-    # Annotations
-    ax.set_title(
-        "Steady-State Heat Distribution — FEM (2×6 mesh, Laplace eq.)", fontsize=13
-    )
-    ax.set_xlabel("x  (m)", fontsize=11)
-    ax.set_ylabel("y  (m)", fontsize=11)
+    ax.set_title("Mesh visualisation — nodes, triangle & circumcircle", fontsize=13)
+    ax.set_xlabel("x", fontsize=11)
+    ax.set_ylabel("y", fontsize=11)
     ax.set_aspect("equal")
-    ax.set_xlim(-0.15, 6.15)
-    ax.set_ylim(-0.25, 2.25)
-
-    # Boundary labels
-    ax.text(
-        -0.1,
-        1.0,
-        "-",
-        ha="right",
-        va="center",
-        fontsize=10,
-        color="darkred",
-        rotation=90,
-    )
-    ax.text(
-        6.1,
-        1.0,
-        "-",
-        ha="left",
-        va="center",
-        fontsize=10,
-        color="navy",
-        rotation=90,
-    )
+    ax.legend(fontsize=10)
+    ax.grid(True, linestyle="--", alpha=0.4)
 
     plt.tight_layout()
-
-    out = "steady_state_plot.png"
+    out = "mesh_visualisation.png"
     plt.savefig(out, dpi=150)
     print(f"Plot saved to {out}")
     plt.show()

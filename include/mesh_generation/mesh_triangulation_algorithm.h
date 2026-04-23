@@ -1,4 +1,5 @@
 #pragma once
+#include <vector>
 
 namespace meshgen::triangulation
 {
@@ -9,6 +10,8 @@ namespace meshgen::triangulation
     struct Triangle {
         Vec2 a, b, c;
     };
+
+    std::vector<Vec2> drawCircle(Vec2 A, Vec2 B, Vec2 C, int numSegments);
 
     bool isInCircle(Vec2 A, Vec2 B, Vec2 C, Vec2 D);
 

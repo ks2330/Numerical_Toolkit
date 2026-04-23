@@ -4,6 +4,7 @@
 //#include "include/nt/finite_element_methods/FEM_Global_Stiffness_Matrix.h"
 //#include "nt/setup_FEM/setup.h"
 #include "mesh_generation/mesh_generation.h"
+#include "mesh_generation/mesh_triangulation_algorithm.h"
 
 /*
 int main() {
@@ -100,17 +101,24 @@ int main() {
 int main() {
     std::cout << "This is the UI application for the Numerical Toolkit.\n";
     std::cout << "Please run the individual test applications to see specific functionalities in action.\n";
-
     meshgeneration::Mesh mesh;
     mesh.initialize("rectangle", 6, 2, 8); // nx=6, ny=2 → 21 nodes, 24 triangular elements
     mesh.generateRandomNodes(30, 6, 2); // Generate 10 random nodes within the rectangle
 
-    const std::string outputPath = "boundary_nodes_rectangular.csv";
+    const std::string outputPath_NODES = "boundary_nodes_rectangular.csv";
+    const std::string outputPath_ELEMENTS = "elements_rectangular.csv";
+    const std::string outputPath = "boundary_nodes_circular.csv";
     std::cout << "Generated rectangular mesh with " << mesh.nodes.size() << " nodes.\n";
-    std::cout << mesh.nodes[0].x << ", " << mesh.nodes[0].y << "\n";
-    std::cout << mesh.nodes[1].x << ", " << mesh.nodes[1].y << "\n";
 
-    std::ofstream nodesFile(outputPath);
+    // Generate a large triangle for circumcenter testing
+    std::vector<meshgeneration::Node> triangleNodes = mesh.generateLargeTriangle(1, 1, 1, 10.0);
+    std::cout << "Generated large triangle nodes:\n";
+
+    std::vector<meshgen::triangulation::Vec2> circlePoints = meshgen::triangulation::drawCircle({triangleNodes[0].x, triangleNodes[0].y}, 
+                        {triangleNodes[1].x, triangleNodes[1].y}, 
+                        {triangleNodes[2].x, triangleNodes[2].y}, 100);
+
+    std::ofstream nodesFile(outputPath_NODES);
     nodesFile << "id,x,y\n";
     for (size_t i = 0; i < mesh.nodes.size(); ++i) {
         nodesFile << i << ","
@@ -118,6 +126,24 @@ int main() {
                   << mesh.nodes[i].y << "\n";
     }
     nodesFile.close();
+
+    std::ofstream elementsFile(outputPath_ELEMENTS);
+    elementsFile << "id,x,y\n";
+    for (size_t i = 0; i < triangleNodes.size(); ++i) {
+        elementsFile << mesh.nodes.size() + i << ","
+                     << triangleNodes[i].x << ","
+                     << triangleNodes[i].y << "\n";
+    }
+    elementsFile.close();
+
+    std::ofstream circleFile(outputPath);
+    circleFile << "id,x,y\n";
+    for (size_t i = 0; i < circlePoints.size(); ++i) {
+        circleFile << mesh.nodes.size() + triangleNodes.size() + i << ","
+                     << circlePoints[i].x << ","
+                  << circlePoints[i].y << "\n";
+    }
+    circleFile.close();
 
     std::cout << "Boundary nodes written to " << outputPath << "\n";
 

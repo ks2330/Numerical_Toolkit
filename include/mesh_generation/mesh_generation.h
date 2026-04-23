@@ -25,6 +25,8 @@ namespace meshgeneration {
     public:
         std::vector<Node> nodes;
         std::vector<Element> elements;
+        std::vector<Node> randomNodes;
+        std::vector<Node> triangleNodes;
 
         void initialize(std::string shape, double dim1, double dim2, int segsPerUnit) {
             if (shape == "circle") {
@@ -61,7 +63,8 @@ namespace meshgeneration {
             }
         }
 
-        void generateRandomNodes(int numNodes, double maxX, double maxY) {
+        std::vector<Node> generateRandomNodes(int numNodes, double maxX, double maxY) {
+
             if (isRectangular) {
                 for (int i = 0; i < numNodes; ++i) {
                     double x = static_cast<double>(rand()) / RAND_MAX * maxX;
@@ -69,17 +72,20 @@ namespace meshgeneration {
                     nodes.push_back({ x, y });
                 }
             }
+            return randomNodes;
         }
         
-        void generateLargeTriangle(double dim1, double dim2, double dim3) {
-            double sizeFactor = 10.0;
+        std::vector<Node> generateLargeTriangle(double dim1, double dim2, double dim3, double sizeFactor) {
             double val1 = -1.0 * (dim1 * sizeFactor);
             double val2 = dim2 + (dim2 * sizeFactor);
             double val3 = dim3 + (dim3 * sizeFactor);
 
-            nodes.push_back({ val1, val2 });
-            nodes.push_back({ val2, val3 });
-            nodes.push_back({ val3, val1 });
+            triangleNodes.push_back({ val1, val2 });
+            triangleNodes.push_back({ val2, val3 });
+            triangleNodes.push_back({ val3, val1 });
+
+            //return the 3 nodes of the triangle to put into the circumcenter function
+            return triangleNodes;
         }
 
     private:
