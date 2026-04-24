@@ -1,4 +1,4 @@
-#include <iostream>
+﻿#include <iostream>
 #include <fstream>
 #include <vector>
 //#include "include/nt/finite_element_methods/FEM_Global_Stiffness_Matrix.h"
@@ -6,13 +6,17 @@
 #include "mesh_generation/mesh_generation.h"
 #include "mesh_generation/mesh_triangulation_algorithm.h"
 
+int nx = 6;
+int ny = 2;
+int segsPerUnit = 1;
+int numRandomNodes = 10;
 
 int main() {
     std::cout << "This is the UI application for the Numerical Toolkit.\n";
     std::cout << "Please run the individual test applications to see specific functionalities in action.\n";
     meshgeneration::Mesh mesh;
-    mesh.initialize("rectangle", 6, 2, 1); // nx=6, ny=2 → 21 nodes, 24 triangular elements
-    mesh.generateRandomNodes(30, 6, 2); // Generate 10 random nodes within the rectangle
+    mesh.initialize("both", nx, ny, segsPerUnit); // nx=6, ny=2 → 21 nodes, 24 triangular elements
+    mesh.generateRandomNodes(numRandomNodes, nx, ny); // Generate 40 random nodes within the rectangle
 
     const std::string outputPath_NODES = "boundary_nodes_rectangular.csv";
     std::cout << "Generated rectangular mesh with " << mesh.nodes.size() << " nodes.\n";
@@ -24,15 +28,22 @@ int main() {
                   << mesh.nodes[i].x << ","
                   << mesh.nodes[i].y << "\n";
     }
+    for (size_t i = 0; i < mesh.randomNodes.size(); ++i) {
+        nodesFile << (mesh.nodes.size() + i) << ","
+                  << mesh.randomNodes[i].x << ","
+                  << mesh.randomNodes[i].y << "\n";
+    }
     nodesFile.close();
 
-    // Run Bowyer-Watson (currently just returns the initial rectangle split)
+    // Run Bowyer-Watson
     std::vector<meshgen::triangulation::Vec2> bwPoints;
     for (const auto& node : mesh.nodes)
         bwPoints.push_back({node.x, node.y});
+    for (const auto& node : mesh.randomNodes)
+        bwPoints.push_back({node.x, node.y});
 
     std::vector<meshgen::triangulation::Triangle> triangles =
-        meshgen::triangulation::bowyerWatson(bwPoints, 6.0, 2.0);
+        meshgen::triangulation::bowyerWatson(bwPoints, static_cast<double>(nx), static_cast<double>(ny));
 
     std::ofstream triFile("triangulation.csv");
     triFile << "ax,ay,bx,by,cx,cy\n";

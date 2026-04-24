@@ -35,3 +35,34 @@ compile_commands.json
 
 # VS Code specific
 .vscode/
+
+# Environment variables and secrets - NEVER commit these
+.env
+.env.local
+.env.*.local
+.env.*
+*.env
+
+# Credentials and secret files
+credentials.json
+secrets.json
+secrets.yaml
+secrets.toml
+*.key
+*.pem
+*.p12
+*.pfx
+config/secrets*
+
+# Python artifacts (project has Python scripts)
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+env/
+
+# OS-specific
+.DS_Store
+Thumbs.db
+Desktop.ini

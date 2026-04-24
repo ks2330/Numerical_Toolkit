@@ -1,7 +1,7 @@
-#pragma once
+﻿#pragma once
 #include <string>
 #include <iostream>
-// include f 
+#include <cmath> 
 
 // This file will be used to generate simple shapes which will then
 // be discretized into meshes for testing our FEM solvers. We will start with creating
@@ -33,11 +33,12 @@ namespace meshgeneration {
                 isRectangular = false;
                 double radius = dim1;
                 int numSegments = static_cast<int>(dim2);
-                double angleStep = 2.0 * 3.14159265358979323846 / numSegments;
+                double angleStep = 2.0 * M_PI / numSegments;
                 for (int i = 0; i < numSegments; ++i) {
                     double angle = i * angleStep;
                     nodes.push_back({ radius * cos(angle), radius * sin(angle) });
                 }
+
             } else if (shape == "rectangle") {
                 isRectangular = true;
                 double width = dim1;
@@ -61,34 +62,61 @@ namespace meshgeneration {
                 for (int j = ny - 1; j >= 1; --j)
                     nodes.push_back({ 0.0, j * height / ny });
             }
+            if (shape == "triangle") {
+                isRectangular = false;
+                // generateLargeTriangle(dim1, dim2, dim2, 1.0);
+            }
+
+            if (shape == "both") {
+                isboth = true;
+                initialize("rectangle", dim1, dim2, segsPerUnit);
+                // std::min(dim1, dim2) / 2.0 gives radius for inscribed circle
+                // but will this be touching the rectangle edge? We should esnure its always smaller than that to avoid degenerate triangles in the mesh
+                isRectangular = false;
+                double radius = std::min(dim1, dim2) / 3.0;
+
+                int numSegments = 12;
+                double angleStep = 2.0 * M_PI / numSegments;
+                for (int i = 0; i < numSegments; ++i) {
+                    double angle = i * angleStep;
+                    nodes.push_back({ radius * cos(angle) + dim1/2, radius * sin(angle) + dim2/2 });
+                }
+
+            }
         }
 
-        std::vector<Node> generateRandomNodes(int numNodes, double maxX, double maxY) {
+        std::vector<Node> generateRandomNodes(int numNodes, double dim1, double dim2) {
 
             if (isRectangular) {
-                for (int i = 0; i < numNodes; ++i) {
-                    double x = static_cast<double>(rand()) / RAND_MAX * maxX;
-                    double y = static_cast<double>(rand()) / RAND_MAX * maxY;
-                    nodes.push_back({ x, y });
+                 for (int i = 0; i < numNodes; ++i) {
+                    double x = static_cast<double>(rand()) / RAND_MAX * dim1;
+                    double y = static_cast<double>(rand()) / RAND_MAX * dim2;
+                    randomNodes.push_back({ x, y });
                 }
             }
+            if (isboth) {
+                for (int i = 0; i < numNodes; ++i) {
+                    double x = static_cast<double>(rand()) / RAND_MAX * dim1;
+                    double y = static_cast<double>(rand()) / RAND_MAX * dim2;
+                    randomNodes.push_back({ x, y });
+                }
+                double radius = std::min(dim1, dim2) / 2.0;
+                for (auto it = randomNodes.begin(); it != randomNodes.end();) {
+                    double dx = it->x - dim1/2;
+                    double dy = it->y - dim2/2;
+                    double distSq = dx*dx + dy*dy;
+                    if (it->x < 0 || it->x > dim1 || it->y < 0 || it->y > dim2 || distSq < radius*radius) {
+                        it = randomNodes.erase(it);
+                    } else {
+                        ++it;
+                    }
+                }   
+            }
             return randomNodes;
-        }
-        
-        std::vector<Node> generateLargeTriangle(double dim1, double dim2, double dim3, double sizeFactor) {
-            double val1 = -1.0 * (dim1 * sizeFactor);
-            double val2 = dim2 + (dim2 * sizeFactor);
-            double val3 = dim3 + (dim3 * sizeFactor);
-
-            triangleNodes.push_back({ val1, val2 });
-            triangleNodes.push_back({ val2, val3 });
-            triangleNodes.push_back({ val3, val1 });
-
-            //return the 3 nodes of the triangle to put into the circumcenter function
-            return triangleNodes;
         }
 
     private:
         bool isRectangular = false;
+        bool isboth = false;
     };
 }
