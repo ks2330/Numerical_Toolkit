@@ -9,13 +9,13 @@
 int nx = 6;
 int ny = 2;
 int segsPerUnit = 1;
-int numRandomNodes = 10;
+int numRandomNodes = 40;
 
 int main() {
     std::cout << "This is the UI application for the Numerical Toolkit.\n";
     std::cout << "Please run the individual test applications to see specific functionalities in action.\n";
     meshgeneration::Mesh mesh;
-    mesh.initialize("both", nx, ny, segsPerUnit); // nx=6, ny=2 → 21 nodes, 24 triangular elements
+    mesh.initialize("rectangle", nx, ny, segsPerUnit); // nx=6, ny=2 → 21 nodes, 24 triangular elements
     mesh.generateRandomNodes(numRandomNodes, nx, ny); // Generate 40 random nodes within the rectangle
 
     const std::string outputPath_NODES = "boundary_nodes_rectangular.csv";
@@ -28,22 +28,11 @@ int main() {
                   << mesh.nodes[i].x << ","
                   << mesh.nodes[i].y << "\n";
     }
-    for (size_t i = 0; i < mesh.randomNodes.size(); ++i) {
-        nodesFile << (mesh.nodes.size() + i) << ","
-                  << mesh.randomNodes[i].x << ","
-                  << mesh.randomNodes[i].y << "\n";
-    }
     nodesFile.close();
 
     // Run Bowyer-Watson
-    std::vector<meshgen::triangulation::Vec2> bwPoints;
-    for (const auto& node : mesh.nodes)
-        bwPoints.push_back({node.x, node.y});
-    for (const auto& node : mesh.randomNodes)
-        bwPoints.push_back({node.x, node.y});
-
-    std::vector<meshgen::triangulation::Triangle> triangles =
-        meshgen::triangulation::bowyerWatson(bwPoints, static_cast<double>(nx), static_cast<double>(ny));
+    std::vector<meshgeneration::Element> triangles =
+        meshgen::triangulation::bowyerWatson(mesh.nodes, static_cast<double>(nx), static_cast<double>(ny));
 
     std::ofstream triFile("triangulation.csv");
     triFile << "ax,ay,bx,by,cx,cy\n";

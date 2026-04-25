@@ -52,4 +52,10 @@ cd "$SCRIPT_DIR/apps/UI"
 # Uncomment the first main() block in main.cpp to produce the FEM steady-state data.
 python mesh_visualisation_tool.py
 
+## Now i want to delete the generated CSV files to keep the directory clean.
+rm -f boundary_nodes_rectangular.csv
+rm -f steady_state_nodes.csv
+rm -f steady_state_elements.csv
+
+
 echo "Done. Output saved to apps/UI/steady_state_plot.png"

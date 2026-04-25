@@ -13,11 +13,23 @@
 namespace meshgeneration {
     struct Node {
         double x, y;
+        int Node_id;
     };
 
 
     struct Element {
-        int nodeIDs[3];   
+        Node a, b, c;  
+        int Element_id;
+    };
+
+    struct Edge {
+        Node a, b;
+        int Edge_id;
+    };
+
+    struct Circumcircle {
+        Node   center;
+        double radius;
     };
 
 
@@ -25,8 +37,6 @@ namespace meshgeneration {
     public:
         std::vector<Node> nodes;
         std::vector<Element> elements;
-        std::vector<Node> randomNodes;
-        std::vector<Node> triangleNodes;
 
         void initialize(std::string shape, double dim1, double dim2, int segsPerUnit) {
             if (shape == "circle") {
@@ -35,8 +45,9 @@ namespace meshgeneration {
                 int numSegments = static_cast<int>(dim2);
                 double angleStep = 2.0 * M_PI / numSegments;
                 for (int i = 0; i < numSegments; ++i) {
-                    double angle = i * angleStep;
-                    nodes.push_back({ radius * cos(angle), radius * sin(angle) });
+                    double angle = i * angleStep;                    
+                    nodes.push_back({ radius * cos(angle), radius * sin(angle), i });
+
                 }
 
             } else if (shape == "rectangle") {
@@ -48,19 +59,20 @@ namespace meshgeneration {
                 // So in this example 
                 const int nx = static_cast<int>(width  * segsPerUnit);
                 const int ny = static_cast<int>(height * segsPerUnit);
-                
+                int id_counter = 0;
                 // Bottom edge (left → right), corners included
                 for (int i = 0; i <= nx; ++i)
-                    nodes.push_back({ i * width / nx, 0.0 });
+                    nodes.push_back({ i * width / nx, 0.0, id_counter++ });
                 // Right edge (bottom → top), skip bottom-right corner
                 for (int j = 1; j <= ny; ++j)
-                    nodes.push_back({ width, j * height / ny });
+                    nodes.push_back({ width, j * height / ny, id_counter++ });
                 // Top edge (right → left), skip top-right corner
                 for (int i = nx - 1; i >= 0; --i)
-                    nodes.push_back({ i * width / nx, height });
+                    nodes.push_back({ i * width / nx, height, id_counter++ });
                 // Left edge (top → bottom), skip both corner nodes
                 for (int j = ny - 1; j >= 1; --j)
-                    nodes.push_back({ 0.0, j * height / ny });
+                    nodes.push_back({ 0.0, j * height / ny, id_counter++ });
+                // const int totalNodes = static_cast<int>(nodes.size()); // This local variable is unused.
             }
             if (shape == "triangle") {
                 isRectangular = false;
@@ -75,45 +87,47 @@ namespace meshgeneration {
                 isRectangular = false;
                 double radius = std::min(dim1, dim2) / 3.0;
 
+                size_t starting_id = nodes.size();
                 int numSegments = 12;
                 double angleStep = 2.0 * M_PI / numSegments;
                 for (int i = 0; i < numSegments; ++i) {
                     double angle = i * angleStep;
-                    nodes.push_back({ radius * cos(angle) + dim1/2, radius * sin(angle) + dim2/2 });
+                    nodes.push_back({ radius * cos(angle) + dim1/2, radius * sin(angle) + dim2/2, static_cast<int>(starting_id + i) });
                 }
 
             }
         }
 
-        std::vector<Node> generateRandomNodes(int numNodes, double dim1, double dim2) {
+        // Generates random interior nodes and adds them to the `nodes` vector.
+        void generateRandomNodes(int numNodes, double dim1, double dim2) {
+            int id_counter = nodes.size();
 
-            if (isRectangular) {
-                 for (int i = 0; i < numNodes; ++i) {
+            if (isboth) {
+                double radius = std::min(dim1, dim2) / 3.0; // Match the radius from initialize()
+                double radiusSq = radius * radius;
+                int nodes_generated = 0;
+                while (nodes_generated < numNodes) {
                     double x = static_cast<double>(rand()) / RAND_MAX * dim1;
                     double y = static_cast<double>(rand()) / RAND_MAX * dim2;
-                    randomNodes.push_back({ x, y });
+
+                    // Check if it's outside the inner circle
+                    double dx = x - dim1/2;
+                    double dy = y - dim2/2;
+                    if (dx*dx + dy*dy >= radiusSq) {
+                        nodes.push_back({x, y, id_counter++});
+                        nodes_generated++;
+                    }
                 }
-            }
-            if (isboth) {
+            } else if (isRectangular) {
                 for (int i = 0; i < numNodes; ++i) {
                     double x = static_cast<double>(rand()) / RAND_MAX * dim1;
                     double y = static_cast<double>(rand()) / RAND_MAX * dim2;
-                    randomNodes.push_back({ x, y });
+                    nodes.push_back({ x, y, id_counter++ });
                 }
-                double radius = std::min(dim1, dim2) / 2.0;
-                for (auto it = randomNodes.begin(); it != randomNodes.end();) {
-                    double dx = it->x - dim1/2;
-                    double dy = it->y - dim2/2;
-                    double distSq = dx*dx + dy*dy;
-                    if (it->x < 0 || it->x > dim1 || it->y < 0 || it->y > dim2 || distSq < radius*radius) {
-                        it = randomNodes.erase(it);
-                    } else {
-                        ++it;
-                    }
-                }   
             }
-            return randomNodes;
         }
+
+        
 
     private:
         bool isRectangular = false;
