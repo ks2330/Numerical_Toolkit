@@ -4,7 +4,6 @@
 //#include "include/nt/finite_element_methods/FEM_Global_Stiffness_Matrix.h"
 //#include "nt/setup_FEM/setup.h"
 #include "mesh_generation/mesh_generation.h"
-#include "mesh_generation/mesh_triangulation_algorithm.h"
 
 int nx = 6;
 int ny = 2;
@@ -31,17 +30,16 @@ int main() {
     nodesFile.close();
 
     // Run Bowyer-Watson
-    std::vector<meshgeneration::Element> triangles =
-        meshgen::triangulation::bowyerWatson(mesh.nodes, static_cast<double>(nx), static_cast<double>(ny));
+    mesh.triangulate(static_cast<double>(nx), static_cast<double>(ny));
 
     std::ofstream triFile("triangulation.csv");
     triFile << "ax,ay,bx,by,cx,cy\n";
-    for (const auto& T : triangles)
+    for (const auto& T : mesh.elements)
         triFile << T.a.x << "," << T.a.y << ","
                 << T.b.x << "," << T.b.y << ","
                 << T.c.x << "," << T.c.y << "\n";
     triFile.close();
-    std::cout << "Initial triangulation: " << triangles.size() << " triangles written to triangulation.csv\n";
+    std::cout << "Initial triangulation: " << mesh.elements.size() << " triangles written to triangulation.csv\n";
 
 /*
     
@@ -56,15 +54,6 @@ int main() {
 
     return 0;
 }
-
-
-
-
-
-
-
-
-
 
 /*
 int main() {

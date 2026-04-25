@@ -2,39 +2,39 @@
 #include <vector>
 #include "mesh_generation/mesh_generation.h"
 
-TEST(MeshTest, Triangulation) {
+TEST(ShapeGenerationTest, RectangleBoundary) {
     using namespace meshgeneration;
-    int expectedNumNodes = 128; // For a 6x2 rectangle with segsPerUnit=8, we expect 128 nodes along the edges
+    const double width = 6.0;
+    const double height = 2.0;
+    const int segsPerUnit = 8;
+    const int nx = static_cast<int>(width * segsPerUnit);
+    const int ny = static_cast<int>(height * segsPerUnit);
+    int expectedNumNodes = 2 * nx + 2 * ny;
     int NumRandomNodes = 30;
     meshgeneration::Mesh mesh;
-    mesh.initialize("rectangle", 6, 2, 8); // nx=6, ny=2 → 21 nodes, 24 triangular elements
+    mesh.initialize("rectangle", width, height, segsPerUnit);
 
     // Test this is working before we add random nodes
-    // Need to also account for the fine mesh generation from segsPerUnit = 8, which adds more nodes along the edges
     EXPECT_EQ(mesh.nodes.size(), expectedNumNodes);
 
-    
-    EXPECT_EQ(mesh.nodes[0].x, 0);
-    EXPECT_EQ(mesh.nodes[0].y, 0);
+    // Check first few nodes
+    EXPECT_DOUBLE_EQ(mesh.nodes[0].x, 0.0);
+    EXPECT_DOUBLE_EQ(mesh.nodes[0].y, 0.0);
 
-    EXPECT_EQ(mesh.nodes[1].x, 0.125);
-    EXPECT_EQ(mesh.nodes[1].y, 0);
+    EXPECT_DOUBLE_EQ(mesh.nodes[1].x, width / nx);
+    EXPECT_DOUBLE_EQ(mesh.nodes[1].y, 0.0);
 
     // All Corner nodes should be present
-    EXPECT_EQ(mesh.nodes[0].x, 0);
-    EXPECT_EQ(mesh.nodes[0].y, 0);
-    EXPECT_EQ(mesh.nodes[7].x, 6);
-    EXPECT_EQ(mesh.nodes[7].y, 0);
-    EXPECT_EQ(mesh.nodes[28].x, 6);
-    EXPECT_EQ(mesh.nodes[28].y, 2);
-    EXPECT_EQ(mesh.nodes[35].x, 0);
-    EXPECT_EQ(mesh.nodes[35].y, 2);
-
-    // Need to also check cicle is working
-
-
-
-    mesh.generateRandomNodes(NumRandomNodes, 6, 2); // Generate 30 random nodes within the rectangle
+    EXPECT_DOUBLE_EQ(mesh.nodes[0].x, 0.0);           // Bottom-left
+    EXPECT_DOUBLE_EQ(mesh.nodes[0].y, 0.0);
+    EXPECT_DOUBLE_EQ(mesh.nodes[nx].x, width);        // Bottom-right
+    EXPECT_DOUBLE_EQ(mesh.nodes[nx].y, 0.0);
+    EXPECT_DOUBLE_EQ(mesh.nodes[nx + ny].x, width);   // Top-right
+    EXPECT_DOUBLE_EQ(mesh.nodes[nx + ny].y, height);
+    EXPECT_DOUBLE_EQ(mesh.nodes[nx + ny + nx].x, 0.0); // Top-left
+    EXPECT_DOUBLE_EQ(mesh.nodes[nx + ny + nx].y, height);
+    
+    mesh.generateRandomNodes(NumRandomNodes, width, height); // Generate 30 random nodes within the rectangle
     EXPECT_EQ(mesh.nodes.size(), expectedNumNodes + NumRandomNodes); // 128 initial + 30 random
 
 }
