@@ -3,7 +3,10 @@
 #include <vector>
 //#include "include/nt/finite_element_methods/FEM_Global_Stiffness_Matrix.h"
 //#include "nt/setup_FEM/setup.h"
-#include "mesh_generation/mesh_generation.h"
+//#include "mesh_generation/mesh_generation.h"
+
+#include "app_support/app_FEM.h"
+#include "app_support/app_FEM_UI.h"
 
 int nx = 6;
 int ny = 2;
@@ -11,46 +14,14 @@ int segsPerUnit = 1;
 int numRandomNodes = 40;
 
 int main() {
-    std::cout << "This is the UI application for the Numerical Toolkit.\n";
-    std::cout << "Please run the individual test applications to see specific functionalities in action.\n";
+    app_support::FEM::run::run_FEM("rectangle", nx, ny, segsPerUnit, numRandomNodes);
     meshgeneration::Mesh mesh;
-    mesh.initialize("rectangle", nx, ny, segsPerUnit); // nx=6, ny=2 → 21 nodes, 24 triangular elements
-    mesh.generateRandomNodes(numRandomNodes, nx, ny); // Generate 40 random nodes within the rectangle
+    mesh.initialize("rectangle", nx, ny, segsPerUnit);
+    mesh.generateRandomNodes(numRandomNodes, nx, ny);
+    app_support::FEM::run::run_Triangulation(mesh, nx, ny);
+    app_support::FEM::UI::write_boundry_nodes_to_csv(mesh, mesh.nodes, "boundary_nodes_rectangular.csv");
+    app_support::FEM::UI::write_triangulation_to_csv(mesh, mesh.elements, mesh.nodes, "triangulation.csv");
 
-    const std::string outputPath_NODES = "boundary_nodes_rectangular.csv";
-    std::cout << "Generated rectangular mesh with " << mesh.nodes.size() << " nodes.\n";
-
-    std::ofstream nodesFile(outputPath_NODES);
-    nodesFile << "id,x,y\n";
-    for (size_t i = 0; i < mesh.nodes.size(); ++i) {
-        nodesFile << i << ","
-                  << mesh.nodes[i].x << ","
-                  << mesh.nodes[i].y << "\n";
-    }
-    nodesFile.close();
-
-    // Run Bowyer-Watson
-    mesh.triangulate(static_cast<double>(nx), static_cast<double>(ny));
-
-    std::ofstream triFile("triangulation.csv");
-    triFile << "ax,ay,bx,by,cx,cy\n";
-    for (const auto& T : mesh.elements)
-        triFile << T.a.x << "," << T.a.y << ","
-                << T.b.x << "," << T.b.y << ","
-                << T.c.x << "," << T.c.y << "\n";
-    triFile.close();
-    std::cout << "Initial triangulation: " << mesh.elements.size() << " triangles written to triangulation.csv\n";
-
-/*
-    
-    std::ofstream circleFile("circumcircles.csv");
-    circleFile << "cx,cy,radius\n";
-    for (const auto& T : triangles) {
-        auto cc = meshgen::triangulation::drawCircle(T.a, T.b, T.c);
-        circleFile << cc.center.x << "," << cc.center.y << "," << cc.radius << "\n";
-    }
-    circleFile.close();
-*/
 
     return 0;
 }

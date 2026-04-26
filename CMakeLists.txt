@@ -33,6 +33,8 @@ add_library(numerical_toolkit
     src/mesh_generation/mesh_triangulation_algorithm.cpp
 
     src/app_support/app_forward_euler.cpp
+    src/app_support/app_FEM.cpp
+    src/app_support/app_FEM_UI.cpp
 )
 
 # This tells any target linking to 'numerical_toolkit' to also:

@@ -3,9 +3,10 @@
 #include <iostream>
 #include <cmath> 
 #include <algorithm>    
-
+#include <tuple>
 #include <vector>
 #include <cmath>
+#include <map>
 
 namespace meshgeneration {
     struct Node {
@@ -13,15 +14,15 @@ namespace meshgeneration {
         int Node_id;
     };
 
-
-    struct Element {
-        Node a, b, c;  
-        int Element_id;
+    struct Edge {
+        int n0_id;
+        int n1_id;
+        int Edge_id;
     };
 
-    struct Edge {
-        Node a, b;
-        int Edge_id;
+    struct Element {
+        int n0_id, n1_id, n2_id;
+        int Element_id;
     };
 
     struct Circumcircle {
@@ -93,6 +94,7 @@ namespace meshgeneration {
                 }
 
             }
+            buildNodeIndexMap();
         }
 
         // Generates random interior nodes and adds them to the `nodes` vector.
@@ -122,6 +124,7 @@ namespace meshgeneration {
                     nodes.push_back({ x, y, id_counter++ });
                 }
             }
+            buildNodeIndexMap();
         }
 
         // Runs the Bowyer-Watson algorithm on the mesh's nodes and populates the elements vector.
@@ -129,12 +132,22 @@ namespace meshgeneration {
             if (nodes.empty()) {
                 return;
             }
-            elements = bowyerWatson(nodes, width, height);
+            elements = bowyerWatson(width, height);
         }
         
+        void buildNodeIndexMap() {
+            id_to_index.clear();
+            for (size_t i = 0; i < nodes.size(); ++i) {
+                id_to_index[nodes[i].Node_id] = i;
+            }
+        }
+
     private:
+        std::map<int, size_t> id_to_index;
+
         bool isRectangular = false;
         bool isboth = false;
+
 
         static Circumcircle drawCircle(Node A, Node B, Node C) {
             double D  = 2 * (A.x * (B.y - C.y) + B.x * (C.y - A.y) + C.x * (A.y - B.y));
@@ -160,53 +173,80 @@ namespace meshgeneration {
             return det > 0;
         }
 
-        static bool isSameEdge(Element t, Edge e2) {
-            auto eq = [](Edge a, Edge b) {
-                return (a.a.x == b.a.x && a.a.y == b.a.y && a.b.x == b.b.x && a.b.y == b.b.y) ||
-                    (a.a.x == b.b.x && a.a.y == b.b.y && a.b.x == b.a.x && a.b.y == b.a.y);
+        // Checks if edge e2 is one of the three edges of triangle t.
+        // This is an order-independent comparison based on node IDs.
+        static bool isSameEdge(const Element& t, const Edge& e2) {
+            auto edges_match = [](int id1, int id2, const Edge& e) {
+                return (id1 == e.n0_id && id2 == e.n1_id) || (id1 == e.n1_id && id2 == e.n0_id);
             };
-            return eq({t.a, t.b, -1}, e2) || eq({t.b, t.c, -1}, e2) || eq({t.c, t.a, -1}, e2);
+            return edges_match(t.n0_id, t.n1_id, e2) ||
+                   edges_match(t.n1_id, t.n2_id, e2) ||
+                   edges_match(t.n2_id, t.n0_id, e2);
         }
 
-        static std::vector<Node> generateLargeTriangle(double dim1, double dim2, double dim3, double sizeFactor) {
+        static std::tuple< std::vector<Node>, std::vector<Element>, std::vector<Edge> >generateLargeTriangle(double dim1, double dim2, double dim3, double sizeFactor) {
             std::vector<Node> triangleNodes;
+            std::vector<Edge> triangleEdges;
+            std::vector<Element> triangleElements;
+            
             double val1 = -1.0 * (dim1 * sizeFactor);
             double val2 = dim2 + (dim2 * sizeFactor);
             double val3 = dim3 + (dim3 * sizeFactor);
+
             triangleNodes.push_back({ val1, val2, -1 }); // Super-triangle nodes get negative IDs
             triangleNodes.push_back({ val2, val3, -2 });
             triangleNodes.push_back({ val3, val1, -3 });
-            return triangleNodes;
+            triangleEdges.push_back({ triangleNodes[0].Node_id, triangleNodes[1].Node_id, -1 });
+            triangleEdges.push_back({ triangleNodes[1].Node_id, triangleNodes[2].Node_id, -2 });
+            triangleEdges.push_back({ triangleNodes[2].Node_id, triangleNodes[0].Node_id, -3 });
+            triangleElements.push_back({ triangleNodes[0].Node_id, triangleNodes[2].Node_id, triangleNodes[1].Node_id, -1 }); // Single super-triangle element
+
+            return {triangleNodes, triangleElements, triangleEdges};
         }
 
         // This function implements the Bowyer-Watson algorithm for Delaunay triangulation
-        static std::vector<Element> bowyerWatson(const std::vector<Node>& points, double width, double height) {
-            // This Creates a super-triangle that encompasses all the points in the input set. 
-            // The sizeFactor can be adjusted to ensure it is sufficiently large.
-            std::vector<Node> superTriangleNodes = generateLargeTriangle(width, height, height, 10);
-            Node n0 = superTriangleNodes[0];
-            Node n1 = superTriangleNodes[1];
-            Node n2 = superTriangleNodes[2];
-            // This Creates a vector of elements, initially containing just the super-triangle.
-            std::vector<Element> triangulation_elements = { {n0, n2, n1, -1} };
+        std::vector<Element> bowyerWatson(double width, double height) {
+            // Create a super-triangle that encompasses all the points.
+            auto [superTriangleNodes, superTriangleElements, superTriangleEdges]  = generateLargeTriangle(width, height, height, 10);
 
-            // This Iterates over each point in the input set and performs the following steps:
-            // a. Identifies all elements in the current triangulation whose circumcircles contain the point 
-            // (these are the "bad" elements that will be removed).
-            // b. Constructs the polygonal hole formed by the edges of the bad elements that are not shared with any other bad triangle.
+            // The master list of nodes for the algorithm to use.
+            // It includes the real points and the super-triangle vertices.
+            std::vector<Node> all_points = nodes; 
+            all_points.insert(all_points.end(), superTriangleNodes.begin(), superTriangleNodes.end());
 
-            for(const auto& point : points){
+
+            // Map node IDs to their index in the all_points vector for quick lookups.
+            // This is robust for any integer ID, including the negative ones from the super-triangle.
+            std::map<int, size_t> id_to_index;
+            for (size_t i = 0; i < all_points.size(); ++i) {
+                id_to_index[all_points[i].Node_id] = i;
+            }
+
+            // Initialize the triangulation with the super-triangle element.
+            int element_id_counter = 0;
+            std::vector<Element> triangulation_elements = superTriangleElements;
+            triangulation_elements[0].Element_id = element_id_counter++;
+
+            for(const auto& point : all_points){
                 std::vector<Element> badTriangles;
                 for(const auto& triangle : triangulation_elements){
-                    if(isInCircle(triangle.a, triangle.b, triangle.c, point)){
+                    Node n0 = all_points.at(id_to_index.at(triangle.n0_id));
+                    Node n1 = all_points.at(id_to_index.at(triangle.n1_id));
+                    Node n2 = all_points.at(id_to_index.at(triangle.n2_id));
+                    if(isInCircle(n0, n1, n2, point)){
                         badTriangles.push_back(triangle);
                     }
                 }
 
                 std::vector<Edge> polygon;
                 for (const auto& triangle : badTriangles){
-                    std::vector<Edge> edges = {{triangle.a, triangle.b, -1}, {triangle.b, triangle.c, -1}, {triangle.c, triangle.a, -1}};
-                    for (const auto& edge : edges){
+                    // Create the three edges of the current bad triangle
+                    Edge edges[3] = {
+                        {triangle.n0_id, triangle.n1_id, -1},
+                        {triangle.n1_id, triangle.n2_id, -1},
+                        {triangle.n2_id, triangle.n0_id, -1}
+                    };
+                    for (const auto& edge : edges) {
                         int count = 0;
                         for (const auto& other : badTriangles){
                             if (isSameEdge(other, edge)){
@@ -214,30 +254,36 @@ namespace meshgeneration {
                             }
                         }
                         if (count == 1){
-                            polygon.push_back(edge);
+                            // To avoid duplicates in the polygon, check if it's already there.
+                            // This check is needed because this loop iterates over all edges of all bad triangles.
+                            bool found = false;
+                            for (const auto& poly_edge : polygon) {
+                                if ((poly_edge.n0_id == edge.n0_id && poly_edge.n1_id == edge.n1_id) ||
+                                    (poly_edge.n0_id == edge.n1_id && poly_edge.n1_id == edge.n0_id)) {
+                                    found = true;
+                                    break;
+                                }
+                            }
+                            if (!found) polygon.push_back(edge);
                         }
                     }
                 }
 
                 triangulation_elements.erase(std::remove_if(triangulation_elements.begin(), triangulation_elements.end(), [&](const Element& t){
                     for(const auto& bad : badTriangles){
-                        if(t.a.x == bad.a.x && t.a.y == bad.a.y &&
-                        t.b.x == bad.b.x && t.b.y == bad.b.y &&
-                        t.c.x == bad.c.x && t.c.y == bad.c.y) return true;
+                        if(t.Element_id == bad.Element_id) return true;
                     }
                     return false;
                 }), triangulation_elements.end());
 
                 for (const auto& edge : polygon){
-                    triangulation_elements.push_back({edge.a, edge.b, point, -1});
+                    triangulation_elements.push_back({edge.n0_id, edge.n1_id, point.Node_id, element_id_counter++});
                 }
             }
 
             // Remove all elements that share a vertex with the super-triangle
             triangulation_elements.erase(std::remove_if(triangulation_elements.begin(), triangulation_elements.end(), [&](const Element& t){
-                return (t.a.x == n0.x && t.a.y == n0.y) || (t.b.x == n0.x && t.b.y == n0.y) || (t.c.x == n0.x && t.c.y == n0.y) ||
-                    (t.a.x == n1.x && t.a.y == n1.y) || (t.b.x == n1.x && t.b.y == n1.y) || (t.c.x == n1.x && t.c.y == n1.y) ||
-                    (t.a.x == n2.x && t.a.y == n2.y) || (t.b.x == n2.x && t.b.y == n2.y) || (t.c.x == n2.x && t.c.y == n2.y);
+                return t.n0_id < 0 || t.n1_id < 0 || t.n2_id < 0;
             }), triangulation_elements.end());
 
             return triangulation_elements;
