@@ -142,6 +142,41 @@ namespace meshgeneration {
             }
         }
 
+        const std::map<int, size_t>& getNodeIndexMap() const {
+            return id_to_index;
+        }
+
+        meshgeneration::Node getNodeByID(int id) const {
+            return nodes[id_to_index.at(id)];
+        }
+
+        size_t getNodeIndex(int node_id) const {
+            return id_to_index.at(node_id);
+        }   
+
+        // Get the max Row Node
+        int getMaxNodeRow() const{
+            int maxRow = 0;
+            for (const auto& node : nodes) {
+                if (node.y > maxRow) {
+                    maxRow = node.y;
+                }
+            }
+            return maxRow;
+        }
+
+        int getMaxNodeCol() const{
+            int maxCol = 0;
+            for (const auto& node : nodes) {
+                if (node.x > maxCol) {
+                    maxCol = node.x;
+                }
+            }
+            return maxCol;
+        }
+
+
+
     private:
         std::map<int, size_t> id_to_index;
 

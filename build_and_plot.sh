@@ -46,11 +46,14 @@ echo "Found executable: $EXE"
 echo "[3/3] Running executable and plotting..."
 cd "$SCRIPT_DIR/apps/UI"
 "$EXE"
-
-# NOTE: plot_steady_state.py reads steady_state_nodes.csv + steady_state_elements.csv.
-# The current main.cpp generates boundary_nodes_rectangular.csv instead.
-# Uncomment the first main() block in main.cpp to produce the FEM steady-state data.
+# Also run the mesh visualization tool
 python mesh_visualisation_tool.py
+
+# Plot the steady state temperature field using the generated CSVs
+echo "[4/4] Generating steady state plot with plot_steady_state.py..."
+python plot_steady_state.py
+
+
 
 ## Now i want to delete the generated CSV files to keep the directory clean.
 rm -f boundary_nodes_rectangular.csv

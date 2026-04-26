@@ -36,12 +36,33 @@ namespace app_support::FEM::UI
         std::cout << "Initial triangulation: " << mesh.elements.size() << " triangles written to triangulation.csv\n";
 
     }
+    
+    void write_Solution_to_csv(std::vector<double>& T, const std::string& outputPath, int N, meshgeneration::Mesh& mesh){
+        // ── Write node data ──────────────────────────────────────────────────
+        std::ofstream nodesFile("steady_state_nodes.csv");
+        nodesFile << "id,x,y,temperature\n";
+        for (int i = 0; i < N; ++i) {
+            nodesFile << i << ","
+                    << mesh.nodes[i].x << ","
+                    << mesh.nodes[i].y << ","
+                    << T[i] << "\n";
+        }
+        nodesFile.close();
+
+        // ── Write element data (node indices) ─────────────────────────────────
+        std::ofstream elemsFile("steady_state_elements.csv");
+        elemsFile << "n0,n1,n2\n";
+        for (const auto& elem : mesh.elements) {
+            elemsFile << elem.n0_id << ","
+                     << elem.n1_id << ","
+                     << elem.n2_id << "\n";
+        }
+        elemsFile.close();
+
+        std::cout << "Steady-state solution written to:\n"
+            << "  steady_state_nodes.csv\n"
+            << "  steady_state_elements.csv\n"
+            << "Run plot_steady_state.py to visualise.\n";
+    }
 
 }
-
-
-
-
-
-//#include "include/nt/finite_element_methods/FEM_Global_Stiffness_Matrix.h"
-//#include "nt/setup_FEM/setup.h"
