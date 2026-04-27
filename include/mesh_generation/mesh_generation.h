@@ -33,6 +33,9 @@ namespace meshgeneration {
 
     class Mesh {
     public:
+        int rectNodeCounter = 0;
+        int circNodeCounter = 0;
+        int triNodeCounter = 0;
         std::vector<Node> nodes;
         std::vector<Element> elements;
 
@@ -85,6 +88,8 @@ namespace meshgeneration {
                 isRectangular = false;
                 double radius = std::min(dim1, dim2) / 3.0;
 
+                rectNodeCounter = static_cast<int>(nodes.size());
+
                 size_t starting_id = nodes.size();
                 int numSegments = 12;
                 double angleStep = 2.0 * M_PI / numSegments;
@@ -92,6 +97,8 @@ namespace meshgeneration {
                     double angle = i * angleStep;
                     nodes.push_back({ radius * cos(angle) + dim1/2, radius * sin(angle) + dim2/2, static_cast<int>(starting_id + i) });
                 }
+
+                circNodeCounter = static_cast<int>(nodes.size()) - rectNodeCounter;
 
             }
             buildNodeIndexMap();
@@ -175,6 +182,13 @@ namespace meshgeneration {
             return maxCol;
         }
 
+        static void enforceConstraint() {
+            // This function can be used to enforce any constraints on the mesh after triangulation, such as ensuring boundary edges are present.
+        }
+
+        static void refineMesh() {
+            // This function can be used to refine the mesh by adding more nodes and re-triangulating, if needed.
+        }
 
 
     private:

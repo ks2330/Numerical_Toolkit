@@ -10,7 +10,7 @@ int nx = 6;
 int ny = 2;
 int segsPerUnit = 1;
 int numRandomNodes = 30;
-std::string shape = "rectangle";
+std::string shape = "both"; // "rectangle", "circle", "both"
 
 int main() {
     meshgeneration::Mesh mesh = app_support::FEM::run::run_FEM(shape, nx, ny, segsPerUnit, numRandomNodes);
