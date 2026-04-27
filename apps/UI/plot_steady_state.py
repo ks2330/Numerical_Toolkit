@@ -11,7 +11,15 @@ Usage
        python apps/UI/plot_steady_state.py
 
 Output: steady_state_plot.png saved alongside the CSVs.
+
+This file is part of NumericalToolkit, a collection of numerical methods implemented in C++ and Python.
+
+This Visualisation tool was written by AI and is simply a demonstration of how to read and plot the results from the finite element method. It is not intended to be a general-purpose plotting tool, but rather a specific example for this project.
+
+
 """
+
+
 
 import csv
 import sys
@@ -87,8 +95,8 @@ def main():
     ax.set_xlabel("x  (m)", fontsize=11)
     ax.set_ylabel("y  (m)", fontsize=11)
     ax.set_aspect("equal")
-    ax.set_xlim(-0.15, 6.15)
-    ax.set_ylim(-0.25, 2.25)
+#    ax.set_xlim(-0.15, 6.15)
+#    ax.set_ylim(-0.25, 2.25)
 
     # Boundary labels
     ax.text(-0.1, 1.0, "T = 100 °C", ha="right", va="center",
