@@ -8,7 +8,7 @@
 
 namespace app_support::FEM::run
 {
-    void run_FEM(std::string shape, double dim1, double dim2, int segsPerUnit, int numRandomNodes) {
+    meshgeneration::Mesh run_FEM(std::string shape, double dim1, double dim2, int segsPerUnit, int numRandomNodes) {
         std::cout << "This is the UI application for the Numerical Toolkit.\n";
         std::cout << "Please run the individual test applications to see specific functionalities in action.\n";
         meshgeneration::Mesh mesh;
@@ -16,6 +16,8 @@ namespace app_support::FEM::run
         mesh.generateRandomNodes(numRandomNodes, static_cast<int>(dim1), static_cast<int>(dim2));
 
         std::cout << "Generated rectangular mesh with " << mesh.nodes.size() << " nodes.\n";
+        
+        return mesh;
     }
 
 

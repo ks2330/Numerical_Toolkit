@@ -4,7 +4,7 @@
 
 namespace app_support::FEM::run
 {
-    void run_FEM(std::string shape, double dim1, double dim2, int segsPerUnit, int numRandomNodes);
+    meshgeneration::Mesh run_FEM(std::string shape, double dim1, double dim2, int segsPerUnit, int numRandomNodes);
     void run_Triangulation(meshgeneration::Mesh& mesh, int nx, int ny);
     std::vector<double> run_FEM_Heat_Equation(meshgeneration::Mesh& mesh);
 }
