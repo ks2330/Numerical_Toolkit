@@ -6,11 +6,11 @@
 #include "app_support/app_FEM.h"
 #include "app_support/app_FEM_UI.h"
 
-int nx = 6;
+int nx = 12;
 int ny = 2;
 int segsPerUnit = 1;
 int numRandomNodes = 30;
-std::string shape = "both"; // "rectangle", "circle", "both"
+std::string shape = "rectangle"; // "rectangle", "circle", "both"
 
 int main() {
     meshgeneration::Mesh mesh = app_support::FEM::run::run_FEM(shape, nx, ny, segsPerUnit, numRandomNodes);
