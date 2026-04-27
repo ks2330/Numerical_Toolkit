@@ -11,7 +11,7 @@
 int nx = 6;
 int ny = 2;
 int segsPerUnit = 1;
-int numRandomNodes = 40;
+int numRandomNodes = 30;
 
 int main() {
     app_support::FEM::run::run_FEM("rectangle", nx, ny, segsPerUnit, numRandomNodes);
@@ -22,8 +22,7 @@ int main() {
     app_support::FEM::UI::write_boundry_nodes_to_csv(mesh, mesh.nodes, "boundary_nodes_rectangular.csv");
     app_support::FEM::UI::write_triangulation_to_csv(mesh, mesh.elements, mesh.nodes, "triangulation.csv");
 
-    app_support::FEM::run::run_FEM_Heat_Equation(mesh);
-    std::vector<double> T(mesh.nodes.size(), 0.0);
+    std::vector<double> T = app_support::FEM::run::run_FEM_Heat_Equation(mesh);
     app_support::FEM::UI::write_Solution_to_csv(T, "steady_state_nodes.csv", mesh.nodes.size(), mesh);
 
     return 0;

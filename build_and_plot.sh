@@ -2,9 +2,11 @@
 # Build fem_steady_state, run it from apps/UI (so CSVs land there), then plot.
 set -euo pipefail
 
-# Ensure boundry_nodes_rectangular.csv is removed befire being generated again.
-rm -f apps/UI/boundary_nodes_rectangular.csv
+# Ensure .csv files are removed before being generated again.
 
+rm -f boundary_nodes_rectangular.csv
+rm -f steady_state_nodes.csv
+rm -f steady_state_elements.csv
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
@@ -55,10 +57,7 @@ python plot_steady_state.py
 
 
 
-## Now i want to delete the generated CSV files to keep the directory clean.
-rm -f boundary_nodes_rectangular.csv
-rm -f steady_state_nodes.csv
-rm -f steady_state_elements.csv
+
 
 
 echo "Done. Output saved to apps/UI/steady_state_plot.png"

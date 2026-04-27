@@ -231,6 +231,14 @@ namespace meshgeneration {
             triangleNodes.push_back({ val1, val2, -1 }); // Super-triangle nodes get negative IDs
             triangleNodes.push_back({ val2, val3, -2 });
             triangleNodes.push_back({ val3, val1, -3 });
+
+            // Ensure the triangle is oriented counter-clockwise for consistency in the algorithm
+            double cross = (triangleNodes[1].x - triangleNodes[0].x) * (triangleNodes[2].y - triangleNodes[0].y)
+             - (triangleNodes[1].y - triangleNodes[0].y) * (triangleNodes[2].x - triangleNodes[0].x);
+            if (cross > 0)
+                std::swap(triangleNodes[1], triangleNodes[2]);
+
+
             triangleEdges.push_back({ triangleNodes[0].Node_id, triangleNodes[1].Node_id, -1 });
             triangleEdges.push_back({ triangleNodes[1].Node_id, triangleNodes[2].Node_id, -2 });
             triangleEdges.push_back({ triangleNodes[2].Node_id, triangleNodes[0].Node_id, -3 });
@@ -262,7 +270,7 @@ namespace meshgeneration {
             std::vector<Element> triangulation_elements = superTriangleElements;
             triangulation_elements[0].Element_id = element_id_counter++;
 
-            for(const auto& point : all_points){
+            for(const auto& point : nodes){
                 std::vector<Element> badTriangles;
                 for(const auto& triangle : triangulation_elements){
                     Node n0 = all_points.at(id_to_index.at(triangle.n0_id));

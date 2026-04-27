@@ -23,26 +23,26 @@ namespace app_support::FEM::run
         mesh.triangulate(static_cast<double>(nx), static_cast<double>(ny));   
     }
 
-    void run_FEM_Heat_Equation(meshgeneration::Mesh& mesh) {
+    std::vector<double> run_FEM_Heat_Equation(meshgeneration::Mesh& mesh) {
         // Solve steady-state Laplace (heat) equation on a 2x6 FEM mesh.
         // Dirichlet BCs: T=100 at x=0 (left wall), T=0 at x=6 (right wall).
         // Neumann (zero flux) BCs on top and bottom — satisfied naturally.
         // Exact solution: T(x) = 100*(6-x)/6   (linear in x)
         const int N = static_cast<int>(mesh.nodes.size());
-        const int nx = mesh.getMaxNodeCol();
-        const int ny = mesh.getMaxNodeRow();
-        int stride = nx + 1;
+        const int MaxX = mesh.getMaxNodeCol();
 
         auto K = nt::fem::assembleGlobalStiffnessMatrix(mesh);
         std::vector<double> rhs(N, 0.0);
 
-        // Enforce Dirichlet BCs on left (x=0) and right (nx_max) columns.
-        for (int row = 0; row <= ny; ++row) {
-            nt::fem::applyDirichletBC(K, rhs, row * stride,          100.0);
-            nt::fem::applyDirichletBC(K, rhs, row * stride + nx,       0.0);
+        for (size_t i = 0; i < mesh.nodes.size(); ++i) {
+            if (std::abs(mesh.nodes[i].x) < 1e-9)
+                nt::fem::applyDirichletBC(K, rhs, i, 100.0);  // left wall
+            if (std::abs(mesh.nodes[i].x - MaxX) < 1e-9)
+                nt::fem::applyDirichletBC(K, rhs, i, 0.0);    // right wall
         }
         std::vector<double> T = nt::fem::gaussianElimination(K, rhs);
-    }
+    return T;
+} 
 }
 
 /*
