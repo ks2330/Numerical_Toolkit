@@ -33,9 +33,6 @@ namespace meshgeneration {
 
     class Mesh {
     public:
-        int rectNodeCounter = 0;
-        int circNodeCounter = 0;
-        int triNodeCounter = 0;
         std::vector<Node> nodes;
         std::vector<Element> elements;
 
@@ -48,7 +45,8 @@ namespace meshgeneration {
                 for (int i = 0; i < numSegments; ++i) {
                     double angle = i * angleStep;                    
                     nodes.push_back({ radius * cos(angle), radius * sin(angle), i });
-
+                
+                totalBoundaryNodes = numSegments;
                 }
 
             } else if (shape == "rectangle") {
@@ -74,10 +72,13 @@ namespace meshgeneration {
                 for (int j = ny - 1; j >= 1; --j)
                     nodes.push_back({ 0.0, j * height / ny, id_counter++ });
                 // const int totalNodes = static_cast<int>(nodes.size()); // This local variable is unused.
+                totalBoundaryNodes = static_cast<int>(nodes.size());
+//                std::cout << "Generated " << totalBoundaryNodes << " boundary nodes for rectangle." << std::endl;
             }
             if (shape == "triangle") {
                 isRectangular = false;
                 // generateLargeTriangle(dim1, dim2, dim2, 1.0);
+                
             }
 
             if (shape == "both") {
@@ -87,34 +88,39 @@ namespace meshgeneration {
                 // but will this be touching the rectangle edge? We should esnure its always smaller than that to avoid degenerate elements in the mesh
                 isRectangular = false;
                 double radius = std::min(dim1, dim2) / 3.0;
-
-                rectNodeCounter = static_cast<int>(nodes.size());
-
-                size_t starting_id = nodes.size();
+                int starting_id = nodes.size();
                 int numSegments = 12;
                 double angleStep = 2.0 * M_PI / numSegments;
                 for (int i = 0; i < numSegments; ++i) {
                     double angle = i * angleStep;
                     nodes.push_back({ radius * cos(angle) + dim1/2, radius * sin(angle) + dim2/2, static_cast<int>(starting_id + i) });
                 }
-
-                circNodeCounter = static_cast<int>(nodes.size()) - rectNodeCounter;
-
+                totalBoundaryNodes = static_cast<int>(nodes.size());
             }
             buildNodeIndexMap();
         }
+        //bool isBoundaryNode(){}
+
+        //bool isBoundaryEdge(){}
 
         // Generates random interior nodes and adds them to the `nodes` vector.
         void generateRandomNodes(int numNodes, double dim1, double dim2) {
             int id_counter = nodes.size();
+            std::vector<Node> boundary(nodes.begin(), nodes.begin() + totalBoundaryNodes);  
+            std::vector<Node> boundingBoxNodes = GetBoundingBox(boundary);
+            double minX = boundingBoxNodes[0].x;
+            double maxX = boundingBoxNodes[1].x;
+            double minY = boundingBoxNodes[0].y;
+            double maxY = boundingBoxNodes[3].y;
+
 
             if (isboth) {
                 double radius = std::min(dim1, dim2) / 3.0; // Match the radius from initialize()
                 double radiusSq = radius * radius;
                 int nodes_generated = 0;
                 while (nodes_generated < numNodes) {
-                    double x = static_cast<double>(rand()) / RAND_MAX * dim1;
-                    double y = static_cast<double>(rand()) / RAND_MAX * dim2;
+                    double x = minX + static_cast<double>(rand()) / RAND_MAX * (maxX - minX);
+                    double y = minY + static_cast<double>(rand()) / RAND_MAX * (maxY - minY);
 
                     // Check if it's outside the inner circle
                     double dx = x - dim1/2;
@@ -125,21 +131,42 @@ namespace meshgeneration {
                     }
                 }
             } else if (isRectangular) {
-                for (int i = 0; i < numNodes; ++i) {
-                    double x = static_cast<double>(rand()) / RAND_MAX * dim1;
-                    double y = static_cast<double>(rand()) / RAND_MAX * dim2;
-                    nodes.push_back({ x, y, id_counter++ });
+                std::cout << "Generating random nodes for rectangle..." << std::endl;
+                bool isInPolygon = true;
+                int nodes_generated = 0;
+                int attempts = 0;
+                int maxAttempts = numNodes * 100;
+                while (nodes_generated < numNodes && attempts < maxAttempts) {
+                    attempts++;
+                    double x = minX + static_cast<double>(rand()) / RAND_MAX * (maxX - minX);
+                    double y = minY + static_cast<double>(rand()) / RAND_MAX * (maxY - minY);
+                    Node randomNode = {x, y, id_counter++};
+
+                    if (isPointInPolygon(randomNode, boundary)) {
+                        nodes.push_back(randomNode);
+                        id_counter++;
+                        nodes_generated++;
+                    }
                 }
+                if (nodes_generated < numNodes){
+                    std::cout << "WARNING: only placed " << nodes_generated 
+                    << " of " << numNodes << " nodes\n";
+                }
+                
             }
             buildNodeIndexMap();
         }
-
         // Runs the Bowyer-Watson algorithm on the mesh's nodes and populates the elements vector.
         void triangulate(double width, double height) {
             if (nodes.empty()) {
                 return;
             }
             elements = bowyerWatson(width, height);
+            if (isboth) {
+                double radius = std::min(width, height) / 3.0;
+                deleteHoles(width/2, height/2, radius);
+                //deleteElementsOutsideDomain(width/2, height/2, radius);
+            }
         }
         
         void buildNodeIndexMap() {
@@ -190,6 +217,100 @@ namespace meshgeneration {
             // This function can be used to refine the mesh by adding more nodes and re-triangulating, if needed.
         }
 
+        Node computeCentroid(const Element& element) {   // drop the Mesh& parameter
+            Node n1 = getNodeByID(element.n0_id);
+            Node n2 = getNodeByID(element.n1_id);
+            Node n3 = getNodeByID(element.n2_id);
+            return { (n1.x + n2.x + n3.x) / 3.0, (n1.y + n2.y + n3.y) / 3.0, -1 };
+        }
+
+        std::tuple<Node, Node, Node>computeEdgeMidpoint(const Element& element) {   // drop the Mesh& parameter
+            Node n1 = getNodeByID(element.n0_id);
+            Node n2 = getNodeByID(element.n1_id);
+            Node n3 = getNodeByID(element.n2_id);
+            Node mid0 = { (n1.x + n2.x) / 2, (n1.y + n2.y) / 2, -1 };
+            Node mid12 = { (n2.x + n3.x) / 2.0, (n2.y + n3.y) / 2.0, -1 };
+            Node mid20 = { (n3.x + n1.x) / 2.0, (n3.y + n1.y) / 2.0, -1 };
+            return { mid0, mid12, mid20 };
+        }
+        
+        
+        void deleteHoles(double circleCenterX, double circleCenterY, double circleRadius) {
+            elements.erase(std::remove_if(elements.begin(), elements.end(), [&](const Element& e) {
+                Node Centroid = computeCentroid(e);
+                double dx = Centroid.x - circleCenterX;
+                double dy = Centroid.y - circleCenterY;
+                double distance = dx * dx + dy * dy;
+                return distance <= circleRadius * circleRadius;
+            }), elements.end());
+        }
+
+        void deleteElementsOutsideDomain(double circleCenterX, double circleCenterY, double circleRadius) {
+            elements.erase(std::remove_if(elements.begin(), elements.end(), [&](const Element& e) {
+                auto [mid01, mid12, mid20] = computeEdgeMidpoint(e);
+                for (const auto& mid : {mid01, mid12, mid20}) {
+                    double dx = mid.x - circleCenterX;
+                    double dy = mid.y - circleCenterY;
+                    double distance = dx * dx + dy * dy;
+                    if (distance <= circleRadius * circleRadius) {
+                        return true; // If any midpoint is inside the circle, we consider this element for deletion
+                    }
+                }
+                return false; // If no midpoint is inside the circle, we keep this element
+                }), elements.end());
+        }
+        
+
+        bool isPointInPolygon(const Node& point, const std::vector<Node>& boundary) {
+            if (boundary.empty()) {
+                return false;
+            }
+            int numIntersections = 0;
+            size_t n = boundary.size();
+            for (size_t i = 0; i < n; ++i) {
+                const Node& p1 = boundary[i];
+                const Node& p2 = boundary[(i + 1) % n];
+                if (point.y > std::min(p1.y, p2.y) && point.y <= std::max(p1.y, p2.y)) {
+                    double xIntersection = p1.x + (point.y - p1.y) * (p2.x - p1.x) / (p2.y - p1.y);
+                    if (xIntersection > point.x) {
+                        numIntersections++;
+                    }
+                }
+            }
+            return numIntersections % 2 == 1;
+
+        }
+
+        void printMeshInfo() const {
+            std::cout << "Mesh Info:\n";
+            std::cout << "Number of Nodes: " << nodes.size() << "\n";
+            std::cout << "Number of Elements: " << elements.size() << "\n";
+        }
+
+
+        std::vector<Node> GetBoundingBox(const std::vector<Node>& Boundry) const {
+            if (Boundry.empty()) {
+                return {};
+            }
+            double minX = Boundry[0].x, maxX = Boundry[0].x;
+            double minY = Boundry[0].y, maxY = Boundry[0].y;
+
+            for (const auto& node : Boundry) {
+                if (node.x < minX) minX = node.x;
+                if (node.x > maxX) maxX = node.x;
+                if (node.y < minY) minY = node.y;
+                if (node.y > maxY) maxY = node.y;
+            }
+
+            std::vector<Node> boundingBoxNodes = {
+                {minX, minY, -1},
+                {maxX, minY, -1},
+                {maxX, maxY, -1},
+                {minX, maxY, -1}
+            };
+
+            return boundingBoxNodes;
+        }
 
     private:
         std::map<int, size_t> id_to_index;
@@ -197,6 +318,7 @@ namespace meshgeneration {
         bool isRectangular = false;
         bool isboth = false;
 
+        int totalBoundaryNodes = 0;
 
         static Circumcircle drawCircle(Node A, Node B, Node C) {
             double D  = 2 * (A.x * (B.y - C.y) + B.x * (C.y - A.y) + C.x * (A.y - B.y));
@@ -333,9 +455,17 @@ namespace meshgeneration {
                     return false;
                 }), triangulation_elements.end());
 
-                for (const auto& edge : polygon){
-                    triangulation_elements.push_back({edge.n0_id, edge.n1_id, point.Node_id, element_id_counter++});
+                for (const auto& edge : polygon) {
+                    Node na = all_points.at(id_to_index.at(edge.n0_id));
+                    Node nb = all_points.at(id_to_index.at(edge.n1_id));
+                    Node np = point;
+                    double cross = (nb.x - na.x) * (np.y - na.y) - (nb.y - na.y) * (np.x - na.x);
+                    if (cross < 0)
+                        triangulation_elements.push_back({edge.n1_id, edge.n0_id, point.Node_id, element_id_counter++});
+                    else
+                        triangulation_elements.push_back({edge.n0_id, edge.n1_id, point.Node_id, element_id_counter++});
                 }
+
             }
 
             // Remove all elements that share a vertex with the super-triangle

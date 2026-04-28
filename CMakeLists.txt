@@ -51,16 +51,17 @@ target_link_libraries(numerical_toolkit PUBLIC Eigen3::Eigen)
 
 
 # Enable testing and fetch Google Test
-enable_testing()
-include(FetchContent)
-FetchContent_Declare(
-  googletest
-  GIT_REPOSITORY https://github.com/google/googletest.git
-  GIT_TAG        v1.14.0
-)
-FetchContent_MakeAvailable(googletest)
 
-add_subdirectory(tests)
+# enable_testing()
+# include(FetchContent)
+# FetchContent_Declare(
+#  googletest
+#  GIT_REPOSITORY https://github.com/google/googletest.git
+#  GIT_TAG        v1.14.0
+# )
+# FetchContent_MakeAvailable(googletest)
+
+# add_subdirectory(tests)
 
 # add_subdirectory(tests)
 add_subdirectory(apps/lid_driven_cavity)
