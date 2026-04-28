@@ -1,34 +1,15 @@
 ﻿#pragma once
 #include <string>
 #include <iostream>
-#include <cmath> 
-#include <algorithm>    
+#include <cmath>
+#include <algorithm>
 #include <tuple>
 #include <vector>
-#include <cmath>
 #include <map>
+#include "mesh_generation/mesh_types.h"
+#include "mesh_generation/shape_generators.h"
 
 namespace meshgeneration {
-    struct Node {
-        double x, y;
-        int Node_id;
-    };
-
-    struct Edge {
-        int n0_id;
-        int n1_id;
-        int Edge_id;
-    };
-
-    struct Element {
-        int n0_id, n1_id, n2_id;
-        int Element_id;
-    };
-
-    struct Circumcircle {
-        Node   center;
-        double radius;
-    };
 
 
     class Mesh {
@@ -74,14 +55,18 @@ namespace meshgeneration {
                 // const int totalNodes = static_cast<int>(nodes.size()); // This local variable is unused.
                 totalBoundaryNodes = static_cast<int>(nodes.size());
 //                std::cout << "Generated " << totalBoundaryNodes << " boundary nodes for rectangle." << std::endl;
-            }
-            if (shape == "triangle") {
+            } else if (shape == "triangle") {
                 isRectangular = false;
                 // generateLargeTriangle(dim1, dim2, dim2, 1.0);
-                
-            }
 
-            if (shape == "both") {
+            }else if (shape == "rectangular") {
+            
+                isRectangular = true;  
+                std::vector<Node> boundaryNodes = shapegeneration::shapes::rectangle(dim1, dim2, segsPerUnit, 0);  
+                nodes.insert(nodes.end(), boundaryNodes.begin(), boundaryNodes.end());
+                totalBoundaryNodes = static_cast<int>(boundaryNodes.size());
+
+            } else if (shape == "both") {
                 isboth = true;
                 initialize("rectangle", dim1, dim2, segsPerUnit);
                 // std::min(dim1, dim2) / 2.0 gives radius for inscribed circle
@@ -140,7 +125,7 @@ namespace meshgeneration {
                     attempts++;
                     double x = minX + static_cast<double>(rand()) / RAND_MAX * (maxX - minX);
                     double y = minY + static_cast<double>(rand()) / RAND_MAX * (maxY - minY);
-                    Node randomNode = {x, y, id_counter++};
+                    Node randomNode = {x, y, id_counter};
 
                     if (isPointInPolygon(randomNode, boundary)) {
                         nodes.push_back(randomNode);
@@ -165,7 +150,6 @@ namespace meshgeneration {
             if (isboth) {
                 double radius = std::min(width, height) / 3.0;
                 deleteHoles(width/2, height/2, radius);
-                //deleteElementsOutsideDomain(width/2, height/2, radius);
             }
         }
         

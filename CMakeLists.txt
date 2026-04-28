@@ -31,6 +31,7 @@ add_library(numerical_toolkit
 
     src/mesh_generation/mesh_generation.cpp
     src/mesh_generation/mesh_triangulation_algorithm.cpp
+    src/mesh_generation/shape_generators.cpp
 
     src/app_support/app_forward_euler.cpp
     src/app_support/app_FEM.cpp
