@@ -17,69 +17,46 @@ namespace meshgeneration {
         std::vector<Node> nodes;
         std::vector<Element> elements;
 
+        void setBoundary(double dim1, double dim2, int segsPerUnit) {
+            nodes.clear();
+            holes.clear();
+            outerBoundary.clear();
+            isRectangular = true;
+            outerBoundary = shapegeneration::shapes::rectangle(dim1, dim2, segsPerUnit, 0);
+            nodes.insert(nodes.end(), outerBoundary.begin(), outerBoundary.end());
+            totalBoundaryNodes = static_cast<int>(outerBoundary.size());
+            buildNodeIndexMap();
+        }
+
+        void AddHole(double radius, double cx, double cy, int numSegments) {
+            std::vector<Node> holeNodes = shapegeneration::shapes::circle(radius, cx, cy, numSegments, static_cast<int>(nodes.size()));
+            std::cout << "Adding hole with " << holeNodes.size() << " nodes\n";
+            nodes.insert(nodes.end(), holeNodes.begin(), holeNodes.end());
+            totalBoundaryNodes += static_cast<int>(holeNodes.size());
+            holes.push_back(holeNodes);
+            buildNodeIndexMap();
+        }
+
         void initialize(std::string shape, double dim1, double dim2, int segsPerUnit) {
             if (shape == "circle") {
                 isRectangular = false;
-                double radius = dim1;
-                int numSegments = static_cast<int>(dim2);
-                double angleStep = 2.0 * M_PI / numSegments;
-                for (int i = 0; i < numSegments; ++i) {
-                    double angle = i * angleStep;                    
-                    nodes.push_back({ radius * cos(angle), radius * sin(angle), i });
-                
-                totalBoundaryNodes = numSegments;
-                }
+                AddHole(dim1, dim2, 0, segsPerUnit);  
 
             } else if (shape == "rectangle") {
                 isRectangular = true;
-                double width = dim1;
-                double height = dim2;
+                setBoundary(dim1, dim2, segsPerUnit);
 
-                // 8 segments per unit length gives spacing of 0.125 — adjust for coarser/finer mesh
-                // So in this example 
-                const int nx = static_cast<int>(width  * segsPerUnit);
-                const int ny = static_cast<int>(height * segsPerUnit);
-                int id_counter = 0;
-                // Bottom edge (left → right), corners included
-                for (int i = 0; i <= nx; ++i)
-                    nodes.push_back({ i * width / nx, 0.0, id_counter++ });
-                // Right edge (bottom → top), skip bottom-right corner
-                for (int j = 1; j <= ny; ++j)
-                    nodes.push_back({ width, j * height / ny, id_counter++ });
-                // Top edge (right → left), skip top-right corner
-                for (int i = nx - 1; i >= 0; --i)
-                    nodes.push_back({ i * width / nx, height, id_counter++ });
-                // Left edge (top → bottom), skip both corner nodes
-                for (int j = ny - 1; j >= 1; --j)
-                    nodes.push_back({ 0.0, j * height / ny, id_counter++ });
-                // const int totalNodes = static_cast<int>(nodes.size()); // This local variable is unused.
-                totalBoundaryNodes = static_cast<int>(nodes.size());
-//                std::cout << "Generated " << totalBoundaryNodes << " boundary nodes for rectangle." << std::endl;
             } else if (shape == "triangle") {
                 isRectangular = false;
                 // generateLargeTriangle(dim1, dim2, dim2, 1.0);
 
-            }else if (shape == "rectangular") {
-            
-                isRectangular = true;  
-                std::vector<Node> boundaryNodes = shapegeneration::shapes::rectangle(dim1, dim2, segsPerUnit, 0);  
-                nodes.insert(nodes.end(), boundaryNodes.begin(), boundaryNodes.end());
-                totalBoundaryNodes = static_cast<int>(boundaryNodes.size());
-
             } else if (shape == "both") {
                 isboth = true;
-                initialize("rectangle", dim1, dim2, segsPerUnit);
-                // std::min(dim1, dim2) / 2.0 gives radius for inscribed circle
-                // but will this be touching the rectangle edge? We should esnure its always smaller than that to avoid degenerate elements in the mesh
-                isRectangular = false;
+                setBoundary(dim1, dim2, segsPerUnit);
                 double radius = std::min(dim1, dim2) / 3.0;
-                int starting_id = nodes.size();
-                int numSegments = 12;
-                double angleStep = 2.0 * M_PI / numSegments;
-                for (int i = 0; i < numSegments; ++i) {
-                    double angle = i * angleStep;
-                    nodes.push_back({ radius * cos(angle) + dim1/2, radius * sin(angle) + dim2/2, static_cast<int>(starting_id + i) });
-                }
+                double cx = dim1 / 2.0;
+                double cy = dim2 / 2.0;
+                AddHole(radius, cx, cy, segsPerUnit);
                 totalBoundaryNodes = static_cast<int>(nodes.size());
             }
             buildNodeIndexMap();
@@ -100,23 +77,32 @@ namespace meshgeneration {
 
 
             if (isboth) {
-                double radius = std::min(dim1, dim2) / 3.0; // Match the radius from initialize()
-                double radiusSq = radius * radius;
                 int nodes_generated = 0;
-                while (nodes_generated < numNodes) {
+                int attempts = 0;
+                int maxAttempts = numNodes * 100;
+                while (nodes_generated < numNodes && attempts < maxAttempts) {
+                    attempts++;
                     double x = minX + static_cast<double>(rand()) / RAND_MAX * (maxX - minX);
                     double y = minY + static_cast<double>(rand()) / RAND_MAX * (maxY - minY);
+                    Node randomNode = {x, y, id_counter};
 
-                    // Check if it's outside the inner circle
-                    double dx = x - dim1/2;
-                    double dy = y - dim2/2;
-                    if (dx*dx + dy*dy >= radiusSq) {
-                        nodes.push_back({x, y, id_counter++});
+                    bool insideOuter = isPointInPolygon(randomNode, outerBoundary);
+                    bool insideAnyHole = false;
+                    for (const auto& hole : holes) {
+                        if (isPointInPolygon(randomNode, hole)) {
+                            insideAnyHole = true;
+                            break;
+                        }
+                    }
+                    if (insideOuter && !insideAnyHole) {
+                        nodes.push_back(randomNode);
+                        id_counter++;
                         nodes_generated++;
                     }
                 }
+                if (nodes_generated < numNodes)
+                    std::cout << "WARNING: only placed " << nodes_generated << " of " << numNodes << " nodes\n";
             } else if (isRectangular) {
-                std::cout << "Generating random nodes for rectangle..." << std::endl;
                 bool isInPolygon = true;
                 int nodes_generated = 0;
                 int attempts = 0;
@@ -147,10 +133,7 @@ namespace meshgeneration {
                 return;
             }
             elements = bowyerWatson(width, height);
-            if (isboth) {
-                double radius = std::min(width, height) / 3.0;
-                deleteHoles(width/2, height/2, radius);
-            }
+            deleteHoles();
         }
         
         void buildNodeIndexMap() {
@@ -219,13 +202,14 @@ namespace meshgeneration {
         }
         
         
-        void deleteHoles(double circleCenterX, double circleCenterY, double circleRadius) {
+        void deleteHoles() {
+            if (holes.empty()) return;
             elements.erase(std::remove_if(elements.begin(), elements.end(), [&](const Element& e) {
-                Node Centroid = computeCentroid(e);
-                double dx = Centroid.x - circleCenterX;
-                double dy = Centroid.y - circleCenterY;
-                double distance = dx * dx + dy * dy;
-                return distance <= circleRadius * circleRadius;
+                Node centroid = computeCentroid(e);
+                for (const auto& hole : holes) {
+                    if (isPointInPolygon(centroid, hole)) return true;
+                }
+                return false;
             }), elements.end());
         }
 
@@ -303,6 +287,8 @@ namespace meshgeneration {
         bool isboth = false;
 
         int totalBoundaryNodes = 0;
+        std::vector<Node> outerBoundary;
+        std::vector<std::vector<Node>> holes;
 
         static Circumcircle drawCircle(Node A, Node B, Node C) {
             double D  = 2 * (A.x * (B.y - C.y) + B.x * (C.y - A.y) + C.x * (A.y - B.y));

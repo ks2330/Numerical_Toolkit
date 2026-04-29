@@ -16,8 +16,8 @@ namespace shapegeneration::shapes {
     // segsPerUnit controls node spacing (e.g. 1 = one node per unit length).
     inline std::vector<Node> rectangle(double width, double height, int segsPerUnit, int id_offset = 0) {
         std::vector<Node> boundary;
-        const int nx = static_cast<int>(width  * segsPerUnit);
-        const int ny = static_cast<int>(height * segsPerUnit);
+        const int nx = static_cast<int>(width  * segsPerUnit/4);
+        const int ny = static_cast<int>(height * segsPerUnit/4);
         int id = id_offset;
 
         for (int i = 0; i <= nx; ++i)
@@ -34,7 +34,8 @@ namespace shapegeneration::shapes {
 
     // Generates boundary nodes for a circle, sampled at numSegments equally spaced angles.
     // cx, cy define the centre. Nodes are ordered CCW starting from angle 0.
-    inline std::vector<Node> circle(double radius, double cx, double cy, int numSegments, int id_offset = 0) {
+    inline std::vector<Node> circle(double radius, double cx, double cy, int numSegments, int id_offset) {
+    //inline std::vector<Node> circle(double radius = 6, double cx = 0, double cy = 0, int numSegments = 12, int id_offset = 0) {
         std::vector<Node> boundary;
         const double angleStep = 2.0 * M_PI / numSegments;
         for (int i = 0; i < numSegments; ++i) {
