@@ -45,4 +45,41 @@ namespace shapegeneration::shapes {
         return boundary;
     }
 
+    
+    // Generates boundary nodes for an upside-down U (Pi shape), traversing CCW.
+    // thickness = width/3, notchDepth = 60% of height.
+    inline std::vector<Node> uShape(double width, double height, int segsPerUnit, int id_offset = 0) {
+        std::vector<Node> boundary;
+        double t = width / 3.0;
+        double d = height * 0.6;
+        int id = id_offset;
+
+        // 8 corners in CCW order
+        struct Corner { double x, y; };
+        Corner corners[8] = {
+            {0,       0},
+            {t,       0},
+            {t,       d},
+            {width-t, d},
+            {width-t, 0},
+            {width,   0},
+            {width,   height},
+            {0,       height}
+        };
+
+        for (int c = 0; c < 8; ++c) {
+            Corner from = corners[c];
+            Corner to   = corners[(c + 1) % 8];
+            double len  = std::sqrt((to.x-from.x)*(to.x-from.x) + (to.y-from.y)*(to.y-from.y));
+            int n = std::max(1, static_cast<int>(len * segsPerUnit / 4));
+            for (int i = 0; i < n; ++i) {  // exclude endpoint to avoid duplicates
+                double fx = from.x + i * (to.x - from.x) / n;
+                double fy = from.y + i * (to.y - from.y) / n;
+                boundary.push_back({fx, fy, id++});
+            }
+        }
+
+        return boundary;
+    }
+
 }

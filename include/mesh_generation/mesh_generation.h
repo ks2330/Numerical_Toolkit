@@ -16,15 +16,25 @@ namespace meshgeneration {
     public:
         std::vector<Node> nodes;
         std::vector<Element> elements;
+        std::vector<Edge> edges;
 
         void setBoundary(double dim1, double dim2, int segsPerUnit) {
             nodes.clear();
+            edges.clear();
             holes.clear();
             outerBoundary.clear();
             isRectangular = true;
             outerBoundary = shapegeneration::shapes::rectangle(dim1, dim2, segsPerUnit, 0);
             nodes.insert(nodes.end(), outerBoundary.begin(), outerBoundary.end());
             totalBoundaryNodes = static_cast<int>(outerBoundary.size());
+            std::vector<Edge> boundaryEdges;
+            for (int i = 0; i < totalBoundaryNodes; ++i) {
+                // Do something with each boundary node if needed
+                int a = nodes[i].Node_id;
+                int b = nodes[(i + 1) % totalBoundaryNodes].Node_id;
+                edges.push_back({ a, b, -1 });
+                boundaryEdges.push_back({ a, b, -1 });
+            }
             buildNodeIndexMap();
         }
 
@@ -33,7 +43,14 @@ namespace meshgeneration {
             std::cout << "Adding hole with " << holeNodes.size() << " nodes\n";
             nodes.insert(nodes.end(), holeNodes.begin(), holeNodes.end());
             totalBoundaryNodes += static_cast<int>(holeNodes.size());
+            std::vector<Edge> holeEdges;
             holes.push_back(holeNodes);
+            for (size_t i = 0; i < holeNodes.size(); ++i) {
+                int a = holeNodes[i].Node_id;
+                int b = holeNodes[(i + 1) % holeNodes.size()].Node_id;
+                edges.push_back({ a, b, -1 });
+                holeEdges.push_back({ a, b, -1 });
+            }
             buildNodeIndexMap();
         }
 
@@ -49,6 +66,20 @@ namespace meshgeneration {
             } else if (shape == "triangle") {
                 isRectangular = false;
                 // generateLargeTriangle(dim1, dim2, dim2, 1.0);
+
+            } else if (shape == "ushape") {
+                isRectangular = false;
+                std::vector<Node> uShapeNodes = shapegeneration::shapes::uShape(dim1, dim2, segsPerUnit, 0);
+                nodes.insert(nodes.end(), uShapeNodes.begin(), uShapeNodes.end());
+                totalBoundaryNodes = static_cast<int>(uShapeNodes.size());
+                std::vector<Edge> boundaryEdges;
+                for (int i = 0; i < totalBoundaryNodes; ++i) {
+                    int a = nodes[i].Node_id;
+                    int b = nodes[(i + 1) % totalBoundaryNodes].Node_id;
+                    edges.push_back({ a, b, -1 });
+                    boundaryEdges.push_back({ a, b, -1 });
+                }
+                buildNodeIndexMap();
 
             } else if (shape == "both") {
                 isboth = true;
@@ -123,16 +154,120 @@ namespace meshgeneration {
                     std::cout << "WARNING: only placed " << nodes_generated 
                     << " of " << numNodes << " nodes\n";
                 }
+            } else if (!outerBoundary.empty()) {
+                int nodes_generated = 0;
+                int attempts = 0;
+                int maxAttempts = numNodes * 100;
+                while (nodes_generated < numNodes && attempts < maxAttempts) {
+                    attempts++;
+                    double x = minX + static_cast<double>(rand()) / RAND_MAX * (maxX - minX);
+                    double y = minY + static_cast<double>(rand()) / RAND_MAX * (maxY - minY);
+                    Node randomNode = {x, y, id_counter};
+                    if (isPointInPolygon(randomNode, outerBoundary)) {
+                        nodes.push_back(randomNode);
+                        id_counter++;
+                        nodes_generated++;
+                    }
+                }
                 
             }
             buildNodeIndexMap();
         }
+
+        bool edgesIntersect(const Edge& e1, const Edge& e2){
+            Node p1 = getNodeByID(e1.n0_id);
+            Node p2 = getNodeByID(e1.n1_id);
+            Node q1 = getNodeByID(e2.n0_id);
+            Node q2 = getNodeByID(e2.n1_id);
+            double rx = p2.x - p1.x;
+            double ry = p2.y - p1.y;
+            double qx = q2.x - q1.x;
+            double qy = q2.y - q1.y;
+            double det = rx * qy - ry * qx;
+            if (std::abs(det) < 1e-10) {
+                return false; // Lines are parallel
+            }
+            double t = ((q1.x - p1.x) * qy - (q1.y - p1.y) * qx) / det;
+            double s = ((q1.x - p1.x) * ry - (q1.y - p1.y) * rx) / det;
+            if (t > 1e-10 && t < 1 - 1e-10 && s > 1e-10 && s < 1 - 1e-10) {
+                return true;
+            }
+
+            return false; // Lines do not intersect
+
+        }
+
+        void enforceConstraint() {
+
+            // This function can be used to enforce any constraints on the mesh after triangulation, such as ensuring boundary edges are present.
+            for (const auto& edge : edges) {
+                std::vector<Element> intersected;
+                bool existBoundaryEdge = false;
+                // Check if this edge exists in the triangulation and if not, add it as a constraint.
+                for (const auto& element : elements) {
+                    if (isSameEdge(element, edge)) {
+                        existBoundaryEdge = true;
+                        break;
+                    }
+                }
+                if (existBoundaryEdge) {
+                        continue;
+                    }
+
+
+                // Now we need to check this edge against every edge in the triangulation to see if it intersects with any of them. If it does, we need to split the intersecting edge and add the constraint edge.
+                for (const auto& element : elements) {
+                    Edge e1 = {element.n0_id, element.n1_id, -1};
+                    Edge e2 = {element.n1_id, element.n2_id, -1};
+                    Edge e3 = {element.n2_id, element.n0_id, -1};
+                    if (edgesIntersect(edge, e1) || edgesIntersect(edge, e2) || edgesIntersect(edge, e3)) {
+                        intersected.push_back(element);
+                    }
+                }
+               elements.erase(std::remove_if(elements.begin(), elements.end(), [&](const Element& e) {
+                    for (const auto& interesectElements : intersected) {
+                        if (e.Element_id == interesectElements.Element_id) return true;
+                    }
+                    return false;
+                }), elements.end());
+                std::vector<Edge> cavityEdges;
+                for (const auto& elem : intersected) {
+                    Edge e[3] = {
+                        {elem.n0_id, elem.n1_id, -1},
+                        {elem.n1_id, elem.n2_id, -1},
+                        {elem.n2_id, elem.n0_id, -1}
+                    };
+                    for (const auto& edge : e) {
+                        int count = 0;
+                        for (const auto& other : intersected) {
+                            if (isSameEdge(other, edge)) count++;
+                        }
+                        if (count == 1) cavityEdges.push_back(edge);
+                    }
+                }
+                for (const auto& cEdge : cavityEdges) {
+                    if (cEdge.n0_id == edge.n0_id || cEdge.n1_id == edge.n0_id) continue;
+                    Node na = getNodeByID(edge.n0_id);
+                    Node nb = getNodeByID(cEdge.n0_id);
+                    Node nc = getNodeByID(cEdge.n1_id);
+                    double cross = (nb.x - na.x) * (nc.y - na.y) - (nb.y - na.y) * (nc.x - na.x);
+                    if (cross < 0)
+                        elements.push_back({edge.n0_id, cEdge.n1_id, cEdge.n0_id, element_id_counter++});
+                    else
+                        elements.push_back({edge.n0_id, cEdge.n0_id, cEdge.n1_id, element_id_counter++});
+                }
+
+
+            }
+        }
+
         // Runs the Bowyer-Watson algorithm on the mesh's nodes and populates the elements vector.
         void triangulate(double width, double height) {
             if (nodes.empty()) {
                 return;
             }
             elements = bowyerWatson(width, height);
+            enforceConstraint();
             deleteHoles();
         }
         
@@ -174,10 +309,6 @@ namespace meshgeneration {
                 }
             }
             return maxCol;
-        }
-
-        static void enforceConstraint() {
-            // This function can be used to enforce any constraints on the mesh after triangulation, such as ensuring boundary edges are present.
         }
 
         static void refineMesh() {
@@ -278,13 +409,17 @@ namespace meshgeneration {
             };
 
             return boundingBoxNodes;
+
+
         }
+
 
     private:
         std::map<int, size_t> id_to_index;
 
         bool isRectangular = false;
         bool isboth = false;
+        int element_id_counter = 0;
 
         int totalBoundaryNodes = 0;
         std::vector<Node> outerBoundary;
@@ -372,7 +507,7 @@ namespace meshgeneration {
             }
 
             // Initialize the triangulation with the super-triangle element.
-            int element_id_counter = 0;
+            element_id_counter = 0;
             std::vector<Element> triangulation_elements = superTriangleElements;
             triangulation_elements[0].Element_id = element_id_counter++;
 
