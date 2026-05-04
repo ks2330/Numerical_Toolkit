@@ -44,7 +44,15 @@ namespace app_support::FEM::run
         }
         std::vector<double> T = nt::fem::gaussianElimination(K, rhs);
     return T;
-} 
+    } 
+
+    meshgeneration::Mesh initialise_from_CSV(std::string filename, double dim1, double dim2, int numRandomNodes) {
+        meshgeneration::Mesh mesh;
+        mesh.init(filename);
+        mesh.generateRandomNodes(numRandomNodes, static_cast<int>(dim1), static_cast<int>(dim2));
+        return mesh;
+    }
+
 }
 
 /*

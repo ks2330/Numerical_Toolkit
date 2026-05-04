@@ -6,14 +6,15 @@
 #include "app_support/app_FEM.h"
 #include "app_support/app_FEM_UI.h"
 
-int nx = 12;
-int ny = 2;
+int nx = 600;
+int ny = 200;
 int segsPerUnit = 1;
 int numRandomNodes = 30;
 std::string shape = "rectangle"; // "rectangle", "circle", "both"
 
 int main() {
-    meshgeneration::Mesh mesh = app_support::FEM::run::run_FEM(shape, nx, ny, segsPerUnit, numRandomNodes);
+    //meshgeneration::Mesh mesh = app_support::FEM::run::run_FEM(shape, nx, ny, segsPerUnit, numRandomNodes);
+    meshgeneration::Mesh mesh = app_support::FEM::run::initialise_from_CSV("Nodes.csv", nx, ny, numRandomNodes);
     app_support::FEM::run::run_Triangulation(mesh, nx, ny);
     app_support::FEM::UI::write_boundry_nodes_to_csv(mesh, mesh.nodes, "boundary_nodes_rectangular.csv");
     app_support::FEM::UI::write_triangulation_to_csv(mesh, mesh.elements, mesh.nodes, "triangulation.csv");

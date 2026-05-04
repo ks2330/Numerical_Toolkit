@@ -7,6 +7,8 @@
 #include <vector>
 #include <cmath>
 #include <map>
+#include <fstream>
+#include <sstream>
 
 namespace meshgeneration {
     struct Node {
@@ -39,6 +41,72 @@ namespace meshgeneration {
         std::vector<Node> nodes;
         std::vector<Element> elements;
 
+        void init(std::string filename){
+            std::ifstream file(filename);
+            if (!file.is_open()) {
+                std::cerr << "Failed to open file: " << filename << std::endl;
+                return;
+            }
+
+            std::string line;
+            bool first_line = true;
+            while (std::getline(file, line)) {
+                // Skip header line
+                if (first_line) {
+                    first_line = false;
+                    continue;
+                }
+                
+                // Parse comma-separated CSV format
+                size_t comma_pos = line.find(',');
+                if (comma_pos != std::string::npos) {
+                    try {
+                        double x = std::stod(line.substr(0, comma_pos));
+                        double y = std::stod(line.substr(comma_pos + 1));
+                        nodes.push_back({ x, y, static_cast<int>(nodes.size()) });
+                    } catch (const std::exception& e) {
+                        std::cerr << "Error parsing line: " << line << " (" << e.what() << ")" << std::endl;
+                    }
+                }
+            }
+            file.close();
+            
+            // Interpolate nodes between each corner pair
+            std::vector<Node> newNodes;
+            size_t original_size = nodes.size();
+            
+            for (size_t i = 0; i < original_size; ++i){
+                // Add current corner node
+                newNodes.push_back(nodes[i]);
+                
+                // Interpolate between current and next corner
+                const auto& currentNode = nodes[i];
+                const auto& nextNode = nodes[(i + 1) % original_size];
+                std::vector<Node> InteralNodes = interpolateEdges(currentNode, nextNode, 10);
+                
+                // Add interpolated nodes
+                for (const auto& intNode : InteralNodes) {
+                    newNodes.push_back(intNode);
+                }
+            }
+            
+            // Replace original nodes with interpolated nodes
+            nodes = newNodes;
+            isRectangular = true;
+            rectNodeCounter = static_cast<int>(nodes.size());
+            
+            // Update all node IDs
+            for (size_t i = 0; i < nodes.size(); ++i){
+                nodes[i].Node_id = i;
+            }
+            // Add 300 to every node.x and 100 to every node.y
+            for (auto& node : nodes) {
+                node.x += 300;
+                node.y += 100;
+            }
+            buildNodeIndexMap();
+        }
+
         void initialize(std::string shape, double dim1, double dim2, int segsPerUnit) {
             if (shape == "circle") {
                 isRectangular = false;
@@ -50,8 +118,9 @@ namespace meshgeneration {
                     nodes.push_back({ radius * cos(angle), radius * sin(angle), i });
 
                 }
+            } 
 
-            } else if (shape == "rectangle") {
+            if (shape == "rectangle") {
                 isRectangular = true;
                 double width = dim1;
                 double height = dim2;
@@ -102,6 +171,17 @@ namespace meshgeneration {
 
             }
             buildNodeIndexMap();
+        }
+
+        std::vector<Node> interpolateEdges(Node p1, Node p2, int segsPerUnit){
+            std::vector<Node> Internodes;
+            for (int i = 1; i < segsPerUnit; ++i) {
+                double t = static_cast<double>(i) /segsPerUnit;
+                double nx = p1.x + t * (p2.x - p1.x);
+                double ny = p1.y + t * (p2.y - p1.y);
+                Internodes.push_back({ nx, ny, 0});
+            }
+            return Internodes;
         }
 
         // Generates random interior nodes and adds them to the `nodes` vector.

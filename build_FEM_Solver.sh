@@ -7,7 +7,6 @@ set -euo pipefail
 rm -f boundary_nodes_rectangular.csv
 rm -f steady_state_nodes.csv
 rm -f steady_state_elements.csv
-rm -f 
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
@@ -49,16 +48,5 @@ echo "Found executable: $EXE"
 echo "[3/3] Running executable and plotting..."
 cd "$SCRIPT_DIR/apps/UI"
 "$EXE"
-# Also run the mesh visualization tool
-python mesh_visualisation_tool.py
 
-# Plot the steady state temperature field using the generated CSVs
-echo "[4/4] Generating steady state plot with plot_steady_state.py..."
-python plot_steady_state.py
-
-
-
-
-
-
-echo "Done. Output saved to apps/UI/steady_state_plot.png"
+echo "Done"

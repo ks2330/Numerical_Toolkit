@@ -96,6 +96,64 @@ def on_apply_clicked(nx_box, ny_box, segs_box, nodes_box, shape_combo):
         QMessageBox.critical(None, "Error", "Failed to update main.cpp")
 
 
+def drawShape(xs, ys):
+    # Plot in Configuraiton Tab the Boundry Nodes
+
+    pass
+
+
+def createShape(nx, ny, segsPerUnit, numRandomNodes, shape):
+    xs = []
+    ys = []
+    if shape == "rectangle":
+        width = nx * segsPerUnit
+        height = ny * segsPerUnit
+
+        i = 0
+        j = 0
+
+        ineg = width
+        jneg = height
+
+        while i < width:
+            xs.append(i * nx / width)
+            ys.append(0)
+            i += 1
+
+        while j < height:
+            xs.append(nx)
+            ys.append(j * ny / height)
+            j += 1
+
+        while ineg >= 0:
+            xs.append(i * nx / width)
+            ys.append(ny)
+            ineg -= 1
+
+        while jneg >= 0:
+            xs.append(0)
+            ys.append(jneg * ny / height)
+            jneg -= 1
+
+        print(xs)
+        print(ys)
+
+    elif shape == "circle":
+        for i in range(nx):
+            for j in range(ny):
+                xs.append(i + 0.5)
+                ys.append(j + 0.5)
+
+    elif shape == "both":
+        for i in range(nx):
+            for j in range(ny):
+                xs.append(i)
+                ys.append(j)
+                xs.append(i + 0.5)
+                ys.append(j + 0.5)
+    return xs, ys
+
+
 def read_xy(path: str):
     """Read x, y coordinates from CSV."""
     xs, ys = [], []
