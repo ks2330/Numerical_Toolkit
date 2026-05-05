@@ -64,6 +64,10 @@ def main():
 
     x, y, T = read_nodes(nodes_csv)
     triangles = read_elements(elems_csv)
+    min_x = np.min(x)
+    max_x = np.max(x)
+    min_y = np.min(y)
+    max_y = np.max(y)
 
     triang = tri.Triangulation(x, y, triangles)
 
@@ -91,7 +95,7 @@ def main():
     cbar.set_ticks(levels)
 
     # Annotations
-    ax.set_title("Steady-State Heat Distribution — FEM (2×6 mesh, Laplace eq.)", fontsize=13)
+    ax.set_title(f"Steady-State Heat Distribution — FEM ({max_x - min_x} x {max_y - min_y} mesh, Laplace eq.)", fontsize=13)
     ax.set_xlabel("x  (m)", fontsize=11)
     ax.set_ylabel("y  (m)", fontsize=11)
     ax.set_aspect("equal")
@@ -99,9 +103,9 @@ def main():
 #    ax.set_ylim(-0.25, 2.25)
 
     # Boundary labels
-    ax.text(-0.1, 1.0, "T = 100 °C", ha="right", va="center",
+    ax.text(min_x - 10, (min_y + max_y) / 2, "T = 100 °C", ha="right", va="center",
             fontsize=10, color="darkred", rotation=90)
-    ax.text(6.1, 1.0, "T = 0 °C", ha="left", va="center",
+    ax.text(max_x + 10, (min_y + max_y) / 2, "T = 0 °C", ha="left", va="center",
             fontsize=10, color="navy", rotation=90)
 
     plt.tight_layout()
