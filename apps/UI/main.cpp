@@ -1,4 +1,4 @@
-﻿#include <iostream>
+#include <iostream>
 #include <fstream>
 #include <vector>
 
@@ -14,6 +14,7 @@ std::string shape = "ushape"; // "rectangle", "circle", "both", "triangle" (not 
 
 int main() {
     meshgeneration::Mesh mesh = app_support::FEM::run::run_FEM(shape, nx, ny, segsPerUnit, numRandomNodes);
+    //meshgeneration::Mesh mesh = app_support::FEM::run::initialise_from_CSV("Nodes.csv", nx, ny, numRandomNodes);
     app_support::FEM::run::run_Triangulation(mesh, nx, ny);
     app_support::FEM::UI::write_boundry_nodes_to_csv(mesh, mesh.nodes, "boundary_nodes_rectangular.csv");
     app_support::FEM::UI::write_triangulation_to_csv(mesh, mesh.elements, mesh.nodes, "triangulation.csv");
@@ -23,4 +24,3 @@ int main() {
 
     return 0;
 }
-

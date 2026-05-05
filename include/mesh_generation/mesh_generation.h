@@ -6,6 +6,8 @@
 #include <tuple>
 #include <vector>
 #include <map>
+#include <fstream>
+#include <sstream>
 #include "mesh_generation/mesh_types.h"
 #include "mesh_generation/shape_generators.h"
 
@@ -17,6 +19,56 @@ namespace meshgeneration {
         std::vector<Node> nodes;
         std::vector<Element> elements;
         std::vector<Edge> edges;
+
+        // Loads boundary corner nodes from a 2-column CSV (x,y) and interpolates
+        // edges between each consecutive pair of corners.
+        void init(std::string filename) {
+            nodes.clear(); edges.clear(); holes.clear(); outerBoundary.clear();
+            std::ifstream file(filename);
+            if (!file.is_open()) {
+                std::cerr << "Failed to open file: " << filename << "\n";
+                return;
+            }
+            std::string line;
+            bool first_line = true;
+            while (std::getline(file, line)) {
+                if (first_line) { first_line = false; continue; }
+                size_t comma = line.find(',');
+                if (comma != std::string::npos) {
+                    try {
+                        double x = std::stod(line.substr(0, comma));
+                        double y = std::stod(line.substr(comma + 1));
+                        nodes.push_back({x, y, static_cast<int>(nodes.size())});
+                    } catch (const std::exception& e) {
+                        std::cerr << "Error parsing line: " << line << " (" << e.what() << ")\n";
+                    }
+                }
+            }
+            file.close();
+
+            // Interpolate additional nodes along each edge between corners
+            std::vector<Node> withInterp;
+            size_t n = nodes.size();
+            int id = 0;
+            for (size_t i = 0; i < n; ++i) {
+                const Node& a = nodes[i];
+                const Node& b = nodes[(i + 1) % n];
+                withInterp.push_back({a.x, a.y, id++});
+                double len = std::sqrt((b.x-a.x)*(b.x-a.x) + (b.y-a.y)*(b.y-a.y));
+                int segs = std::max(1, static_cast<int>(len / 10.0));
+                for (int s = 1; s < segs; ++s) {
+                    double t = static_cast<double>(s) / segs;
+                    withInterp.push_back({a.x + t*(b.x-a.x), a.y + t*(b.y-a.y), id++});
+                }
+            }
+            nodes = withInterp;
+            totalBoundaryNodes = static_cast<int>(nodes.size());
+            outerBoundary = nodes;
+            for (int i = 0; i < totalBoundaryNodes; ++i)
+                edges.push_back({nodes[i].Node_id, nodes[(i+1) % totalBoundaryNodes].Node_id, -1});
+            isRectangular = false;
+            buildNodeIndexMap();
+        }
 
         void setBoundary(double dim1, double dim2, int segsPerUnit) {
             nodes.clear();
