@@ -52,8 +52,8 @@ def read_elements(path: str):
 # ── main ─────────────────────────────────────────────────────────────────────
 
 def main():
-    nodes_csv = "steady_state_nodes.csv"
-    elems_csv = "steady_state_elements.csv"
+    nodes_csv = "results/csv/steady_state_nodes.csv"
+    elems_csv = "results/csv/steady_state_elements.csv"
 
     for path in (nodes_csv, elems_csv):
         if not os.path.exists(path):
@@ -106,7 +106,7 @@ def main():
 
     plt.tight_layout()
 
-    out = "steady_state_plot.png"
+    out = "results/png/steady_state_plot.png"
     plt.savefig(out, dpi=150)
     print(f"Plot saved to {out}")
     plt.show()

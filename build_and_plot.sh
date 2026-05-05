@@ -1,30 +1,31 @@
 #!/usr/bin/env bash
-# Build fem_steady_state, run it from apps/UI (so CSVs land there), then plot.
+# Build fem_steady_state, run it from the project root, then plot.
 set -euo pipefail
-
-# Ensure .csv files are removed before being generated again.
-
-rm -f boundary_nodes_rectangular.csv
-rm -f steady_state_nodes.csv
-rm -f steady_state_elements.csv
-rm -f 
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
+# ── Clean previous results ────────────────────────────────────────────────────
+rm -f results/csv/boundary_nodes_rectangular.csv
+rm -f results/csv/steady_state_nodes.csv
+rm -f results/csv/steady_state_elements.csv
+rm -f results/csv/triangulation.csv
+rm -f results/png/mesh_visualisation.png
+rm -f results/png/steady_state_plot.png
+
 # ── 1. Configure ─────────────────────────────────────────────────────────────
 if [ ! -d "build" ]; then
-    echo "[1/3] Configuring CMake..."
+    echo "[1/4] Configuring CMake..."
     cmake -S . -B build
 else
-    echo "[1/3] Build directory already exists, skipping configure."
+    echo "[1/4] Build directory already exists, skipping configure."
 fi
 
 # ── 2. Build ──────────────────────────────────────────────────────────────────
-echo "[2/3] Building fem_steady_state..."
+echo "[2/4] Building fem_steady_state..."
 cmake --build build --target fem_steady_state
 
-# Locate the executable (handles both flat and Debug/Release subdirs)
+# Locate the executable
 EXE=""
 for candidate in \
     "build/apps/UI/fem_steady_state.exe" \
@@ -45,20 +46,15 @@ fi
 
 echo "Found executable: $EXE"
 
-# ── 3. Run from apps/UI so generated CSVs land there ─────────────────────────
-echo "[3/3] Running executable and plotting..."
-cd "$SCRIPT_DIR/apps/UI"
+# ── 3. Run from project root (outputs land in results/) ───────────────────────
+echo "[3/4] Running executable..."
 "$EXE"
-# Also run the mesh visualization tool
-python mesh_visualisation_tool.py
 
-# Plot the steady state temperature field using the generated CSVs
-echo "[4/4] Generating steady state plot with plot_steady_state.py..."
-python plot_steady_state.py
+# ── 4. Plot ───────────────────────────────────────────────────────────────────
+echo "[4/4] Generating plots..."
+python apps/UI/mesh_visualisation_tool.py
+python apps/UI/plot_steady_state.py
 
-
-
-
-
-
-echo "Done. Output saved to apps/UI/steady_state_plot.png"
+echo "Done."
+echo "  CSVs -> results/csv/"
+echo "  PNGs -> results/png/"

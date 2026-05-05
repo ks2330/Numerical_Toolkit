@@ -2,7 +2,6 @@
 #include <fstream>
 #include <vector>
 
-
 #include "app_support/app_FEM.h"
 #include "app_support/app_FEM_UI.h"
 
@@ -14,13 +13,13 @@ std::string shape = "ushape"; // "rectangle", "circle", "both", "triangle" (not 
 
 int main() {
     meshgeneration::Mesh mesh = app_support::FEM::run::run_FEM(shape, nx, ny, segsPerUnit, numRandomNodes);
-    //meshgeneration::Mesh mesh = app_support::FEM::run::initialise_from_CSV("Nodes.csv", nx, ny, numRandomNodes);
+    //meshgeneration::Mesh mesh = app_support::FEM::run::initialise_from_CSV("results/csv/Nodes.csv", nx, ny, numRandomNodes);
     app_support::FEM::run::run_Triangulation(mesh, nx, ny);
-    app_support::FEM::UI::write_boundry_nodes_to_csv(mesh, mesh.nodes, "boundary_nodes_rectangular.csv");
-    app_support::FEM::UI::write_triangulation_to_csv(mesh, mesh.elements, mesh.nodes, "triangulation.csv");
+    app_support::FEM::UI::write_boundry_nodes_to_csv(mesh, mesh.nodes, "results/csv/boundary_nodes_rectangular.csv");
+    app_support::FEM::UI::write_triangulation_to_csv(mesh, mesh.elements, mesh.nodes, "results/csv/triangulation.csv");
 
     std::vector<double> T = app_support::FEM::run::run_FEM_Heat_Equation(mesh);
-    app_support::FEM::UI::write_Solution_to_csv(T, "steady_state_nodes.csv", mesh.nodes.size(), mesh);
+    app_support::FEM::UI::write_Solution_to_csv(T, "results/csv/steady_state_nodes.csv", mesh.nodes.size(), mesh);
 
     return 0;
 }

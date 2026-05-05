@@ -1,6 +1,11 @@
 # Build output
 build/
 
+# Generated results (CSVs, PNGs, STEPs) — folder structure kept via .gitkeep
+results/csv/*.csv
+results/png/*.png
+results/step/*.step
+
 # CMake generated files
 CMakeCache.txt
 CMakeFiles/

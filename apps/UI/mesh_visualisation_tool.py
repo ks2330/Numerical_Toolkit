@@ -54,13 +54,13 @@ def draw_inscribed_circle(ax, path):
 # ── main ─────────────────────────────────────────────────────────────────────
 def main():
     datasets = [
-        ("boundary_nodes_rectangular.csv", "Mesh nodes", "steelblue", 40, "o"),
+        ("results/csv/boundary_nodes_rectangular.csv", "Mesh nodes", "steelblue", 40, "o"),
     ]
 
     fig, ax = plt.subplots(figsize=(11, 6))
 
-    draw_triangulation(ax, "triangulation.csv")
-    draw_inscribed_circle(ax, "inscribed_circle.csv")
+    draw_triangulation(ax, "results/csv/triangulation.csv")
+    draw_inscribed_circle(ax, "results/csv/inscribed_circle.csv")
 
     for path, label, colour, size, marker in datasets:
         if not os.path.exists(path):
@@ -78,7 +78,7 @@ def main():
     ax.grid(True, linestyle="--", alpha=0.4)
 
     plt.tight_layout()
-    out = "mesh_visualisation.png"
+    out = "results/png/mesh_visualisation.png"
     plt.savefig(out, dpi=150)
     print(f"Plot saved to {out}")
     plt.show()
