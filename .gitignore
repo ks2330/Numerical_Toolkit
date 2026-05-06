@@ -59,6 +59,9 @@ secrets.toml
 *.pfx
 config/secrets*
 
+# Animation scripts (local social media content, not part of the codebase)
+apps/animations/
+
 # Python artifacts (project has Python scripts)
 __pycache__/
 *.pyc

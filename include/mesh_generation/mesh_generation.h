@@ -265,8 +265,6 @@ namespace meshgeneration {
                 if (existBoundaryEdge) {
                         continue;
                     }
-
-
                 // Now we need to check this edge against every edge in the triangulation to see if it intersects with any of them. If it does, we need to split the intersecting edge and add the constraint edge.
                 for (const auto& element : elements) {
                     Edge e1 = {element.n0_id, element.n1_id, -1};
@@ -312,6 +310,15 @@ namespace meshgeneration {
 
             }
         }
+        
+        void enforceOutsideConstraints() {
+            if (outerBoundary.empty()) return;
+            elements.erase(std::remove_if(elements.begin(), elements.end(), [&](const Element& e) {
+                Node centroid = computeCentroid(e);
+                return !isPointInPolygon(centroid, outerBoundary);
+
+            }), elements.end());
+        }
 
         // Runs the Bowyer-Watson algorithm on the mesh's nodes and populates the elements vector.
         void triangulate(double width, double height) {
@@ -321,6 +328,7 @@ namespace meshgeneration {
             elements = bowyerWatson(width, height);
             enforceConstraint();
             deleteHoles();
+            enforceOutsideConstraints();
         }
         
         void buildNodeIndexMap() {
