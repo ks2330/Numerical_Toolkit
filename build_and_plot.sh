@@ -12,7 +12,8 @@ rm -f results/csv/steady_state_elements.csv
 rm -f results/csv/triangulation.csv
 rm -f results/png/mesh_visualisation.png
 rm -f results/png/steady_state_plot.png
-
+# -- Create Boundary Plots --
+echo "Boundary Shape Created"
 # ── 1. Configure ─────────────────────────────────────────────────────────────
 if [ ! -d "build" ]; then
     echo "[1/4] Configuring CMake..."

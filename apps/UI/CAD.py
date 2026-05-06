@@ -1,15 +1,26 @@
 from build123d import *
 import re
 import csv
+import os
+from pathlib import Path
 
-# 1. Create a rectangle as a 'Face'
-# This method is much more direct for 2D FEM work
-rect_face = Sketch() + Rectangle(600, 200)
 
-# 2. Export the resulting geometry
-# In build123d, the export_step function is a standalone utility
-# that takes the object and the filename.
-export_step(rect_face, "rectangle.step")
+# Define dimensions
+height = 600
+width = 200
+thickness = 60
+
+with BuildSketch() as h_sketch:
+    # 1. Create the two vertical side bars
+    # We place them at +/- (width/2 - thickness/2) on the X axis
+    with Locations((-width / 2 + thickness / 2, 0), (width / 2 - thickness / 2, 0)):
+        Rectangle(thickness, height)
+
+    # 2. Create the central horizontal crossbar
+    # The width needs to span the gap between the bars
+    Rectangle(width, thickness)
+
+export_step(h_sketch.sketch, "rectangle.step")
 
 print("Generated rectangle.step successfully.")
 
@@ -56,4 +67,42 @@ def parse_step_to_csv(step_filename, csv_filename):
 
 # Execute
 parse_step_to_csv("rectangle.step", "Nodes.csv")
+
+root_path = Path(__file__).resolve().parents[2]
+
+
+destination_path = root_path / "results" / "step"
+destination_path.mkdir(parents=True, exist_ok=True)
+
+source_file = root_path / "apps" / "UI" / "rectangle.step"
+
+destination_file = destination_path / "rectangle.step"
+
+try:
+    os.remove(destination_file)
+except FileNotFoundError:
+    pass
+except PermissionError:
+    print("Error: You do not have permission to delete this file.")
+
+source_file.rename(destination_file)
+
+destination_path = root_path / "results" / "csv"
+destination_path.mkdir(parents=True, exist_ok=True)
+
+source_file = root_path / "apps" / "UI" / "Nodes.csv"
+
+destination_file = destination_path / "Nodes.csv"
+
+try:
+    os.remove(destination_file)
+except FileNotFoundError:
+    pass
+except PermissionError:
+    print("Error: You do not have permission to delete this file.")
+
+source_file.rename(destination_file)
+print("Generate CSV File and put into csv folder")
+
+
 print("CSV generated with Coordinates!")

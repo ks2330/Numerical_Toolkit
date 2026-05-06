@@ -19,6 +19,7 @@ namespace meshgeneration {
         std::vector<Node> nodes;
         std::vector<Element> elements;
         std::vector<Edge> edges;
+        std::vector<Edge> boundaryEdges;
 
         // Loads boundary corner nodes from a 2-column CSV (x,y) and interpolates
         // edges between each consecutive pair of corners.
@@ -66,6 +67,8 @@ namespace meshgeneration {
             outerBoundary = nodes;
             for (int i = 0; i < totalBoundaryNodes; ++i)
                 edges.push_back({nodes[i].Node_id, nodes[(i+1) % totalBoundaryNodes].Node_id, -1});
+            boundaryEdges = edges;
+
             isRectangular = false;
             buildNodeIndexMap();
         }
