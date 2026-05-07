@@ -71,6 +71,7 @@ namespace meshgeneration {
 
             isRectangular = false;
             buildNodeIndexMap();
+            bool isGenerated = true;
         }
 
         void setBoundary(double dim1, double dim2, int segsPerUnit) {
@@ -79,6 +80,7 @@ namespace meshgeneration {
             holes.clear();
             outerBoundary.clear();
             isRectangular = true;
+            isGenerated = false;
             outerBoundary = shapegeneration::shapes::rectangle(dim1, dim2, segsPerUnit, 0);
             nodes.insert(nodes.end(), outerBoundary.begin(), outerBoundary.end());
             totalBoundaryNodes = static_cast<int>(outerBoundary.size());
@@ -152,81 +154,119 @@ namespace meshgeneration {
         //bool isBoundaryEdge(){}
 
         // Generates random interior nodes and adds them to the `nodes` vector.
-        void generateRandomNodes(int numNodes, double dim1, double dim2) {
-            int id_counter = nodes.size();
-            std::vector<Node> boundary(nodes.begin(), nodes.begin() + totalBoundaryNodes);  
-            std::vector<Node> boundingBoxNodes = GetBoundingBox(boundary);
-            double minX = boundingBoxNodes[0].x;
-            double maxX = boundingBoxNodes[1].x;
-            double minY = boundingBoxNodes[0].y;
-            double maxY = boundingBoxNodes[3].y;
+        void generateRandomNodes(int numNodes, double dim1, double dim2, std::string method) {
+            if (method == "random" && !isGenerated) {
+                
+                std::cout << "Generating random nodes within the domain...\n";
+            
+                int id_counter = nodes.size();
+                std::vector<Node> boundary(nodes.begin(), nodes.begin() + totalBoundaryNodes);  
+                std::vector<Node> boundingBoxNodes = GetBoundingBox(boundary);
+                double minX = boundingBoxNodes[0].x;
+                double maxX = boundingBoxNodes[1].x;
+                double minY = boundingBoxNodes[0].y;
+                double maxY = boundingBoxNodes[3].y;
 
 
-            if (isboth) {
-                int nodes_generated = 0;
-                int attempts = 0;
-                int maxAttempts = numNodes * 100;
-                while (nodes_generated < numNodes && attempts < maxAttempts) {
-                    attempts++;
-                    double x = minX + static_cast<double>(rand()) / RAND_MAX * (maxX - minX);
-                    double y = minY + static_cast<double>(rand()) / RAND_MAX * (maxY - minY);
-                    Node randomNode = {x, y, id_counter};
+                if (isboth) {
+                    int nodes_generated = 0;
+                    int attempts = 0;
+                    int maxAttempts = numNodes * 100;
+                    while (nodes_generated < numNodes && attempts < maxAttempts) {
+                        attempts++;
+                        double x = minX + static_cast<double>(rand()) / RAND_MAX * (maxX - minX);
+                        double y = minY + static_cast<double>(rand()) / RAND_MAX * (maxY - minY);
+                        Node randomNode = {x, y, id_counter};
 
-                    bool insideOuter = isPointInPolygon(randomNode, outerBoundary);
-                    bool insideAnyHole = false;
-                    for (const auto& hole : holes) {
-                        if (isPointInPolygon(randomNode, hole)) {
-                            insideAnyHole = true;
-                            break;
+                        bool insideOuter = isPointInPolygon(randomNode, outerBoundary);
+                        bool insideAnyHole = false;
+                        for (const auto& hole : holes) {
+                            if (isPointInPolygon(randomNode, hole)) {
+                                insideAnyHole = true;
+                                break;
+                            }
+                        }
+                        if (insideOuter && !insideAnyHole) {
+                            nodes.push_back(randomNode);
+                            id_counter++;
+                            nodes_generated++;
                         }
                     }
-                    if (insideOuter && !insideAnyHole) {
-                        nodes.push_back(randomNode);
-                        id_counter++;
-                        nodes_generated++;
-                    }
-                }
-                if (nodes_generated < numNodes)
-                    std::cout << "WARNING: only placed " << nodes_generated << " of " << numNodes << " nodes\n";
-            } else if (isRectangular) {
-                bool isInPolygon = true;
-                int nodes_generated = 0;
-                int attempts = 0;
-                int maxAttempts = numNodes * 100;
-                while (nodes_generated < numNodes && attempts < maxAttempts) {
-                    attempts++;
-                    double x = minX + static_cast<double>(rand()) / RAND_MAX * (maxX - minX);
-                    double y = minY + static_cast<double>(rand()) / RAND_MAX * (maxY - minY);
-                    Node randomNode = {x, y, id_counter};
+                    if (nodes_generated < numNodes)
+                        std::cout << "WARNING: only placed " << nodes_generated << " of " << numNodes << " nodes\n";
+                } else if (isRectangular) {
+                    bool isInPolygon = true;
+                    int nodes_generated = 0;
+                    int attempts = 0;
+                    int maxAttempts = numNodes * 100;
+                    while (nodes_generated < numNodes && attempts < maxAttempts) {
+                        attempts++;
+                        double x = minX + static_cast<double>(rand()) / RAND_MAX * (maxX - minX);
+                        double y = minY + static_cast<double>(rand()) / RAND_MAX * (maxY - minY);
+                        Node randomNode = {x, y, id_counter};
 
-                    if (isPointInPolygon(randomNode, boundary)) {
-                        nodes.push_back(randomNode);
-                        id_counter++;
-                        nodes_generated++;
+                        if (isPointInPolygon(randomNode, boundary)) {
+                            nodes.push_back(randomNode);
+                            id_counter++;
+                            nodes_generated++;
+                        }
                     }
-                }
-                if (nodes_generated < numNodes){
-                    std::cout << "WARNING: only placed " << nodes_generated 
-                    << " of " << numNodes << " nodes\n";
-                }
-            } else if (!outerBoundary.empty()) {
-                int nodes_generated = 0;
-                int attempts = 0;
-                int maxAttempts = numNodes * 100;
-                while (nodes_generated < numNodes && attempts < maxAttempts) {
-                    attempts++;
-                    double x = minX + static_cast<double>(rand()) / RAND_MAX * (maxX - minX);
-                    double y = minY + static_cast<double>(rand()) / RAND_MAX * (maxY - minY);
-                    Node randomNode = {x, y, id_counter};
-                    if (isPointInPolygon(randomNode, outerBoundary)) {
-                        nodes.push_back(randomNode);
-                        id_counter++;
-                        nodes_generated++;
+                    if (nodes_generated < numNodes){
+                        std::cout << "WARNING: only placed " << nodes_generated 
+                        << " of " << numNodes << " nodes\n";
                     }
+                } else if (!outerBoundary.empty()) {
+
+                    int nodes_generated = 0;
+                    int attempts = 0;
+                    int maxAttempts = numNodes * 100;
+                    while (nodes_generated <= 1 && attempts < maxAttempts) {
+                        attempts++;
+                        double x = minX + static_cast<double>(rand()) / RAND_MAX * (maxX - minX);
+                        double y = minY + static_cast<double>(rand()) / RAND_MAX * (maxY - minY);
+                        Node randomNode = {x, y, id_counter};
+                        if (isPointInPolygon(randomNode, outerBoundary)) {
+                            nodes.push_back(randomNode);
+                            id_counter++;
+                            nodes_generated++;
+                            std::cout << "Generated " << nodes_generated << " random nodes inside the outer boundary.\n";
+                        }
+                    }
+                    
                 }
-                
+                buildNodeIndexMap();
             }
-            buildNodeIndexMap();
+            if (method == "poisson") {
+                std::cout << "Generating a random node using Poisson Disk Sampling method...\n";
+                int id_counter = nodes.size();
+                std::vector<Node> boundary(nodes.begin(), nodes.begin() + totalBoundaryNodes);  
+                std::vector<Node> boundingBoxNodes = GetBoundingBox(boundary);
+                double minX = boundingBoxNodes[0].x;
+                double maxX = boundingBoxNodes[1].x;
+                double minY = boundingBoxNodes[0].y;
+                double maxY = boundingBoxNodes[3].y;
+
+                int k = 30; // Number of attempts before rejection
+                double s = std::min((maxX - minX), (maxY - minY)) / std::sqrt(numNodes) / std::sqrt(2.0); // Cell size
+
+                if (!outerBoundary.empty()) {
+                    bool node_placed = false;
+                    int attempts = 0;
+                    const int maxAttempts = 10000;
+                    while(!node_placed && attempts < maxAttempts) {
+                        attempts++;
+                        double x = static_cast<double>(rand()) / RAND_MAX * (maxX - minX) + minX;
+                        double y = static_cast<double>(rand()) / RAND_MAX * (maxY - minY) + minY;
+                        Node randomNode = {x, y, id_counter};
+                        if(isPointInPolygon(randomNode, outerBoundary)){
+                            nodes.push_back(randomNode);
+                            id_counter++;
+                            node_placed = true;
+                        }
+                    }
+                }
+                buildNodeIndexMap();
+            }
         }
 
         bool edgesIntersect(const Edge& e1, const Edge& e2){
@@ -268,8 +308,6 @@ namespace meshgeneration {
                 if (existBoundaryEdge) {
                         continue;
                     }
-
-
                 // Now we need to check this edge against every edge in the triangulation to see if it intersects with any of them. If it does, we need to split the intersecting edge and add the constraint edge.
                 for (const auto& element : elements) {
                     Edge e1 = {element.n0_id, element.n1_id, -1};
@@ -315,15 +353,25 @@ namespace meshgeneration {
 
             }
         }
+        
+        void enforceOutsideConstraints() {
+            if (outerBoundary.empty()) return;
+            elements.erase(std::remove_if(elements.begin(), elements.end(), [&](const Element& e) {
+                Node centroid = computeCentroid(e);
+                return !isPointInPolygon(centroid, outerBoundary);
+
+            }), elements.end());
+        }
 
         // Runs the Bowyer-Watson algorithm on the mesh's nodes and populates the elements vector.
-        void triangulate(double width, double height) {
+        void triangulate() {
             if (nodes.empty()) {
                 return;
             }
-            elements = bowyerWatson(width, height);
+            elements = bowyerWatson();
             enforceConstraint();
             deleteHoles();
+            enforceOutsideConstraints();
         }
         
         void buildNodeIndexMap() {
@@ -475,6 +523,7 @@ namespace meshgeneration {
         bool isRectangular = false;
         bool isboth = false;
         int element_id_counter = 0;
+        bool isGenerated = false;
 
         int totalBoundaryNodes = 0;
         std::vector<Node> outerBoundary;
@@ -544,9 +593,23 @@ namespace meshgeneration {
         }
 
         // This function implements the Bowyer-Watson algorithm for Delaunay triangulation
-        std::vector<Element> bowyerWatson(double width, double height) {
+        std::vector<Element> bowyerWatson() {
             // Create a super-triangle that encompasses all the points.
-            auto [superTriangleNodes, superTriangleElements, superTriangleEdges]  = generateLargeTriangle(width, height, height, 10);
+            // This is critical for the algorithm's correctness. A super-triangle that is
+            // too small can lead to incorrect triangulation and the observed crash.
+            std::vector<Node> superTriangleNodes;
+            auto bbox = GetBoundingBox(nodes);
+            double minX = bbox[0].x, maxX = bbox[1].x;
+            double minY = bbox[0].y, maxY = bbox[2].y;
+            double dx = maxX - minX, dy = maxY - minY;
+            double M = std::max(dx, dy) * 2.0;
+            double midX = (minX + maxX) / 2.0;
+            double midY = (minY + maxY) / 2.0;
+
+            superTriangleNodes.push_back({midX - M, midY - M, -1});
+            superTriangleNodes.push_back({midX + M, midY - M, -2});
+            superTriangleNodes.push_back({midX, midY + 2*M, -3});
+            std::vector<Element> superTriangleElements = {{superTriangleNodes[0].Node_id, superTriangleNodes[1].Node_id, superTriangleNodes[2].Node_id, -1}};
 
             // The master list of nodes for the algorithm to use.
             // It includes the real points and the super-triangle vertices.
