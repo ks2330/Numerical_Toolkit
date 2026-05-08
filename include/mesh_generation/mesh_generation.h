@@ -8,6 +8,8 @@
 #include <map>
 #include <fstream>
 #include <sstream>
+#include <span>
+
 #include "mesh_generation/mesh_types.h"
 #include "mesh_generation/shape_generators.h"
 
@@ -56,7 +58,7 @@ namespace meshgeneration {
                 const Node& b = nodes[(i + 1) % n];
                 withInterp.push_back({a.x, a.y, id++});
                 double len = std::sqrt((b.x-a.x)*(b.x-a.x) + (b.y-a.y)*(b.y-a.y));
-                int segs = std::max(1, static_cast<int>(len / 10.0));
+                int segs = std::max(1, static_cast<int>(len / 50.0));
                 for (int s = 1; s < segs; ++s) {
                     double t = static_cast<double>(s) / segs;
                     withInterp.push_back({a.x + t*(b.x-a.x), a.y + t*(b.y-a.y), id++});
@@ -237,19 +239,61 @@ namespace meshgeneration {
                 buildNodeIndexMap();
             }
             if (method == "poisson") {
-                std::cout << "Generating a random node using Poisson Disk Sampling method...\n";
+
                 int id_counter = nodes.size();
+
                 std::vector<Node> boundary(nodes.begin(), nodes.begin() + totalBoundaryNodes);  
                 std::vector<Node> boundingBoxNodes = GetBoundingBox(boundary);
+
                 double minX = boundingBoxNodes[0].x;
                 double maxX = boundingBoxNodes[1].x;
                 double minY = boundingBoxNodes[0].y;
                 double maxY = boundingBoxNodes[3].y;
 
-                int k = 30; // Number of attempts before rejection
-                double s = std::min((maxX - minX), (maxY - minY)) / std::sqrt(numNodes) / std::sqrt(2.0); // Cell size
+                int k = 30;
+                double s = std::min((maxX - minX), (maxY - minY)) / std::sqrt(numNodes) / std::sqrt(2.0);
 
-                if (!outerBoundary.empty()) {
+                std::vector<Node> activeNodes = initPoisson(numNodes);
+
+                while(activeNodes.size() > 0 && nodes.size() - totalBoundaryNodes < static_cast<size_t>(numNodes)) {
+                    int idx = rand() % activeNodes.size();
+                    Node activeNode = activeNodes[idx];
+                    bool found = false;
+                    for (int tries = 0; tries < k; ++tries) {
+                        double angle = static_cast<double>(rand()) / RAND_MAX * 2 * M_PI;
+                        double radius = s * (1 + static_cast<double>(rand()) / RAND_MAX);
+                        Node newNode = {activeNode.x + radius * cos(angle), activeNode.y + radius * sin(angle), id_counter};
+                        if (isPointInPolygon(newNode, boundary) && !isSdistanceTooClose(newNode, s)) {
+                            nodes.push_back(newNode);
+                            id_counter++;
+                            activeNodes.push_back(newNode);
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (!found) {
+                        activeNodes.erase(activeNodes.begin() + idx);
+                    }
+                }
+                
+                buildNodeIndexMap();
+            }
+        }
+
+        std::vector<Node> initPoisson(int numNodes) {
+
+            int id_counter = nodes.size();
+
+            std::vector<Node> boundary(nodes.begin(), nodes.begin() + totalBoundaryNodes);  
+            std::vector<Node> boundingBoxNodes = GetBoundingBox(boundary);
+
+            double minX = boundingBoxNodes[0].x;
+            double maxX = boundingBoxNodes[1].x;
+            double minY = boundingBoxNodes[0].y;
+            double maxY = boundingBoxNodes[3].y;
+            std::vector<Node> activeNodes;
+
+            if (!outerBoundary.empty()) {
                     bool node_placed = false;
                     int attempts = 0;
                     const int maxAttempts = 10000;
@@ -262,11 +306,27 @@ namespace meshgeneration {
                             nodes.push_back(randomNode);
                             id_counter++;
                             node_placed = true;
+                            activeNodes.push_back(randomNode);
                         }
+
+                    }
+                    if (!node_placed) {
+                        std::cerr << "Failed to place initial Poisson node after " << maxAttempts << " attempts.\n";
+                    }
+                    if (node_placed){
+                        std::cout << "Placed initial Poisson node at (" << activeNodes[0].x << ", " << activeNodes[0].y << ")\n";
                     }
                 }
-                buildNodeIndexMap();
+            return activeNodes;
+        }
+
+        bool isSdistanceTooClose(const Node& node, double s) {
+            for (size_t i = totalBoundaryNodes; i < nodes.size(); ++i) {
+                double dx = nodes[i].x - node.x;
+                double dy = nodes[i].y - node.y;
+                if (dx*dx + dy*dy < s*s) return true;
             }
+            return false;
         }
 
         bool edgesIntersect(const Edge& e1, const Edge& e2){
