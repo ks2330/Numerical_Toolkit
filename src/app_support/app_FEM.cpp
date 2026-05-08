@@ -12,7 +12,8 @@ namespace app_support::FEM::run
         std::cout << "This is the UI application for the Numerical Toolkit.\n";
         std::cout << "Please run the individual test applications to see specific functionalities in action.\n";
         meshgeneration::Mesh mesh;
-        mesh.initialize(shape, static_cast<int>(dim1), static_cast<int>(dim2), segsPerUnit);
+        //mesh.initialize(shape, static_cast<int>(dim1), static_cast<int>(dim2), segsPerUnit);
+        mesh.init("results/csv/ushape_nodes.csv");
         mesh.generateRandomNodes(numRandomNodes, static_cast<int>(dim1), static_cast<int>(dim2), "poisson");
 
         std::cout << "Generated rectangular mesh with " << mesh.nodes.size() << " nodes.\n";
