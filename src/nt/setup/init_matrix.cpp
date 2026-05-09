@@ -10,27 +10,27 @@ namespace nt::setup
     // @param U1 The value for interior points.
     // @param U0 The value for the first point (boundary condition).
     // @param UL The value for the last point (boundary condition).
-    std::vector<Eigen::Triplet<double>> init_matrix(int N, double U1, double U0, double UL) {
-        if (N <= 0) {
-            return {};
-        }
+//    std::vector<Eigen::Triplet<double>> init_matrix(int N, double U1, double U0, double UL) {
+ //       if (N <= 0) {
+//            return {};
+//        }
 
-        std::vector<Eigen::Triplet<double>> triplets;
-        triplets.reserve(N);
+//        std::vector<Eigen::Triplet<double>> triplets;
+ //       triplets.reserve(N);
 
         // First point (boundary at i=0)
-        triplets.emplace_back(0, 0, U0);
+        // triplets.emplace_back(0, 0, U0);
 
         // Interior points
-        for (int i = 1; i < N - 1; ++i) {
-            triplets.emplace_back(0, i, U1);
-        }
+//        for (int i = 1; i < N - 1; ++i) {
+//            triplets.emplace_back(0, i, U1);
+//        }
 
         // Last point (boundary at i=N-1)
-        if (N > 1) {
-            triplets.emplace_back(0, N - 1, UL);
-        }
+//        if (N > 1) {
+//            triplets.emplace_back(0, N - 1, UL);
+//        }
 
-        return triplets;
-    }
+//        return triplets;
+//    }
 }

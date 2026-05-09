@@ -38,8 +38,8 @@ Config config = {
 
 int main() {
     //meshgeneration::Mesh mesh = app_support::FEM::run::run_FEM(shape, nx, ny, segsPerUnit, numRandomNodes);
-    meshgeneration::Mesh mesh = app_support::FEM::run::initialise_from_CSV(config.shapeCSV, config.nx, config.ny, config.numRandomNodes);
-    app_support::FEM::run::run_Triangulation(mesh, config.nx, config.ny);
+    meshgeneration::Mesh mesh = app_support::FEM::run::initialise_from_CSV(config.shapeCSV);
+    app_support::FEM::run::run_Triangulation(mesh);
     app_support::FEM::UI::write_boundry_nodes_to_csv(mesh, mesh.nodes, config.boundaryCSV);
     app_support::FEM::UI::write_triangulation_to_csv(mesh, mesh.elements, mesh.nodes, config.triangulationCSV);
 

@@ -5,5 +5,5 @@
 
 namespace nt::setup
 {
-    std::vector<Eigen::Triplet<double>> init_matrix(int N, double U0, double U1, double UL);
+//    std::vector<Eigen::Triplet<double>> init_matrix(int N, double U0, double U1, double UL);
 }

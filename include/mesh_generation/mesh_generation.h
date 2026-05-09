@@ -27,6 +27,14 @@ namespace meshgeneration {
         // edges between each consecutive pair of corners.
         void init(std::string filename) {
             nodes.clear(); edges.clear(); holes.clear(); outerBoundary.clear();
+            ParseBoundaryCSV(filename);
+            CreateOuterBoundary();
+            GetInteriorNodeNumber();
+            buildNodeIndexMap();
+            bool isGenerated = true;
+        }
+
+        void ParseBoundaryCSV(std::string filename) {
             std::ifstream file(filename);
             if (!file.is_open()) {
                 std::cerr << "Failed to open file: " << filename << "\n";
@@ -48,7 +56,10 @@ namespace meshgeneration {
                 }
             }
             file.close();
+        }
 
+        void CreateOuterBoundary() {
+            if (nodes.empty()) return;
             // Interpolate additional nodes along each edge between corners
             std::vector<Node> withInterp;
             size_t n = nodes.size();
@@ -57,7 +68,7 @@ namespace meshgeneration {
                 const Node& a = nodes[i];
                 const Node& b = nodes[(i + 1) % n];
                 withInterp.push_back({a.x, a.y, id++});
-                double len = std::sqrt((b.x-a.x)*(b.x-a.x) + (b.y-a.y)*(b.y-a.y));
+                double len = distance(a, b);
                 int segs = std::max(1, static_cast<int>(len / 50.0));
                 for (int s = 1; s < segs; ++s) {
                     double t = static_cast<double>(s) / segs;
@@ -70,55 +81,19 @@ namespace meshgeneration {
             for (int i = 0; i < totalBoundaryNodes; ++i)
                 edges.push_back({nodes[i].Node_id, nodes[(i+1) % totalBoundaryNodes].Node_id, -1});
             boundaryEdges = edges;
-
-            isRectangular = false;
-            buildNodeIndexMap();
-            bool isGenerated = true;
         }
-        void setBoundary(double dim1, double dim2, int segsPerUnit) {
-            nodes.clear();
-            edges.clear();
-            holes.clear();
-            outerBoundary.clear();
-            isRectangular = true;
-            isGenerated = false;
-            outerBoundary = shapegeneration::shapes::rectangle(dim1, dim2, segsPerUnit, 0);
-            nodes.insert(nodes.end(), outerBoundary.begin(), outerBoundary.end());
-            totalBoundaryNodes = static_cast<int>(outerBoundary.size());
-            std::vector<Edge> boundaryEdges;
-            for (int i = 0; i < totalBoundaryNodes; ++i) {
-                // Do something with each boundary node if needed
-                int a = nodes[i].Node_id;
-                int b = nodes[(i + 1) % totalBoundaryNodes].Node_id;
-                edges.push_back({ a, b, -1 });
-                boundaryEdges.push_back({ a, b, -1 });
-            }
-            buildNodeIndexMap();
+        
+        void GetInteriorNodeNumber(){
+            auto bbox = GetBoundingBox(nodes);
+            double minX = bbox[0].x, maxX = bbox[1].x;
+            double minY = bbox[0].y, maxY = bbox[2].y;
+            double dx = maxX - minX, dy = maxY - minY;
+            numRandomNodes = static_cast<int>((boundaryEdges.size() * boundaryEdges.size()) / 2500);
         }
 
-        void AddHole(double radius, double cx, double cy, int numSegments) {
-            std::vector<Node> holeNodes = shapegeneration::shapes::circle(radius, cx, cy, numSegments, static_cast<int>(nodes.size()));
-            std::cout << "Adding hole with " << holeNodes.size() << " nodes\n";
-            nodes.insert(nodes.end(), holeNodes.begin(), holeNodes.end());
-            totalBoundaryNodes += static_cast<int>(holeNodes.size());
-            std::vector<Edge> holeEdges;
-            holes.push_back(holeNodes);
-            for (size_t i = 0; i < holeNodes.size(); ++i) {
-                int a = holeNodes[i].Node_id;
-                int b = holeNodes[(i + 1) % holeNodes.size()].Node_id;
-                edges.push_back({ a, b, -1 });
-                holeEdges.push_back({ a, b, -1 });
-            }
-            buildNodeIndexMap();
-        }
-
-        //bool isBoundaryNode(){}
-
-        //bool isBoundaryEdge(){}
 
         // Generates random interior nodes and adds them to the `nodes` vector.
-        void generateRandomNodes(int numNodes, double dim1, double dim2, std::string method) {
-            if (method == "poisson") {
+        void generateRandomNodes() {
 
                 std::vector<Node> boundary(nodes.begin(), nodes.begin() + totalBoundaryNodes);  
                 std::vector<Node> boundingBoxNodes = GetBoundingBox(boundary);
@@ -129,11 +104,11 @@ namespace meshgeneration {
                 double maxY = boundingBoxNodes[3].y;
 
                 int k = 30;
-                double s = std::min((maxX - minX), (maxY - minY)) / std::sqrt(numNodes) / std::sqrt(2.0);
+                double s = std::min((maxX - minX), (maxY - minY)) / std::sqrt(numRandomNodes) / std::sqrt(2.0);
 
-                std::vector<Node> activeNodes = initPoisson(numNodes);
+                std::vector<Node> activeNodes = initPoisson();
                 int id_counter = nodes.size();
-                while(activeNodes.size() > 0 && nodes.size() - totalBoundaryNodes < static_cast<size_t>(numNodes)) {
+                while(activeNodes.size() > 0 && nodes.size() - totalBoundaryNodes < static_cast<size_t>(numRandomNodes)) {
                     int idx = rand() % activeNodes.size();
                     Node activeNode = activeNodes[idx];
                     bool found = false;
@@ -155,10 +130,10 @@ namespace meshgeneration {
                 }
                 
                 buildNodeIndexMap();
-            }
+
         }
 
-        std::vector<Node> initPoisson(int numNodes) {
+        std::vector<Node> initPoisson() {
 
             int id_counter = nodes.size();
 
@@ -267,7 +242,7 @@ namespace meshgeneration {
                     Node na = getNodeByID(edge.n0_id);
                     Node nb = getNodeByID(cEdge.n0_id);
                     Node nc = getNodeByID(cEdge.n1_id);
-                    double cross = (nb.x - na.x) * (nc.y - na.y) - (nb.y - na.y) * (nc.x - na.x);
+                    double cross = orient2d(na, nb, nc);
                     if (cross < 0)
                         elements.push_back({edge.n0_id, cEdge.n1_id, cEdge.n0_id, element_id_counter++});
                     else
@@ -391,7 +366,7 @@ namespace meshgeneration {
                                      (na.y + nb.y + apexNode.y) / 3.0, -1};
                     if (!isPointInPolygon(midpoint, *boundary)) continue;
                 }
-                double cross = (nb.x - na.x) * (apexNode.y - na.y) - (nb.y - na.y) * (apexNode.x - na.x);
+                double cross = orient2d(na, nb, apexNode);
                 if (cross < 0)
                     outElements.push_back({edge.n1_id, edge.n0_id, apexNode.Node_id, idCounter++});
                 else
@@ -459,15 +434,20 @@ namespace meshgeneration {
         }
 
         double aspectRatio(const Node& a, const Node& b, const Node& c) {
-            double ab = std::sqrt((b.x-a.x)*(b.x-a.x) + (b.y-a.y)*(b.y-a.y));
-            double bc = std::sqrt((c.x-b.x)*(c.x-b.x) + (c.y-b.y)*(c.y-b.y));
-            double ca = std::sqrt((a.x-c.x)*(a.x-c.x) + (a.y-c.y)*(a.y-c.y));
+            double ab = distance(a, b);
+            double bc = distance(b, c);
+            double ca = distance(c, a);
             double longest = std::max({ab, bc, ca});
-            double cross = (b.x-a.x)*(c.y-a.y) - (b.y-a.y)*(c.x-a.x);
+            double cross = orient2d(a, b, c);
             double area = 0.5 * std::abs(cross);
             return (0.433 * longest * longest) / area;
         }
-        
+
+        static double orient2d(const Node& a, const Node& b, const Node& c) {
+            double val = (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x);
+            return val;
+        }
+
         void buildNodeIndexMap() {
             id_to_index.clear();
             for (size_t i = 0; i < nodes.size(); ++i) {
@@ -486,6 +466,14 @@ namespace meshgeneration {
         size_t getNodeIndex(int node_id) const {
             return id_to_index.at(node_id);
         }   
+
+        static double distance(const Node& a, const Node& b) {
+            return std::sqrt((b.x - a.x) * (b.x - a.x) + (b.y - a.y) * (b.y - a.y));
+        }
+
+        static double distanceSquared(const Node& a, const Node& b) {
+            return (b.x - a.x) * (b.x - a.x) + (b.y - a.y) * (b.y - a.y);
+        }
 
         // Get the max Row Node
         int getMaxNodeRow() const{
@@ -540,22 +528,6 @@ namespace meshgeneration {
                 return false;
             }), elements.end());
         }
-
-        void deleteElementsOutsideDomain(double circleCenterX, double circleCenterY, double circleRadius) {
-            elements.erase(std::remove_if(elements.begin(), elements.end(), [&](const Element& e) {
-                auto [mid01, mid12, mid20] = computeEdgeMidpoint(e);
-                for (const auto& mid : {mid01, mid12, mid20}) {
-                    double dx = mid.x - circleCenterX;
-                    double dy = mid.y - circleCenterY;
-                    double distance = dx * dx + dy * dy;
-                    if (distance <= circleRadius * circleRadius) {
-                        return true; // If any midpoint is inside the circle, we consider this element for deletion
-                    }
-                }
-                return false; // If no midpoint is inside the circle, we keep this element
-                }), elements.end());
-        }
-        
 
         bool isPointInPolygon(const Node& point, const std::vector<Node>& boundary) {
             if (boundary.empty()) {
@@ -614,26 +586,13 @@ namespace meshgeneration {
     private:
         std::map<int, size_t> id_to_index;
 
-        bool isRectangular = false;
-        bool isboth = false;
         int element_id_counter = 0;
         bool isGenerated = false;
+        int numRandomNodes = 0;
 
         int totalBoundaryNodes = 0;
         std::vector<Node> outerBoundary;
         std::vector<std::vector<Node>> holes;
-
-        static Circumcircle drawCircle(Node A, Node B, Node C) {
-            double D  = 2 * (A.x * (B.y - C.y) + B.x * (C.y - A.y) + C.x * (A.y - B.y));
-            double Ux = ((A.x*A.x + A.y*A.y) * (B.y - C.y) + (B.x*B.x + B.y*B.y) * (C.y - A.y) + (C.x*C.x + C.y*C.y) * (A.y - B.y)) / D;
-            double Uy = ((A.x*A.x + A.y*A.y) * (C.x - B.x) + (B.x*B.x + B.y*B.y) * (A.x - C.x) + (C.x*C.x + C.y*C.y) * (B.x - A.x)) / D;
-
-            Circumcircle result;
-            result.center = {Ux, Uy, -1}; // Assign a temporary ID for the center
-            result.radius = sqrt((result.center.x - A.x)*(result.center.x - A.x) +
-                                (result.center.y - A.y)*(result.center.y - A.y));
-            return result;
-        }
 
         // Returns true if Point D is inside the circumcircle of ABC
         static bool isInCircle(Node A, Node B, Node C, Node D) {
@@ -658,33 +617,6 @@ namespace meshgeneration {
                    edges_match(t.n2_id, t.n0_id, e2);
         }
 
-        static std::tuple< std::vector<Node>, std::vector<Element>, std::vector<Edge> >generateLargeTriangle(double dim1, double dim2, double dim3, double sizeFactor) {
-            std::vector<Node> triangleNodes;
-            std::vector<Edge> triangleEdges;
-            std::vector<Element> triangleElements;
-            
-            double val1 = -1.0 * (dim1 * sizeFactor);
-            double val2 = dim2 + (dim2 * sizeFactor);
-            double val3 = dim3 + (dim3 * sizeFactor);
-
-            triangleNodes.push_back({ val1, val2, -1 }); // Super-triangle nodes get negative IDs
-            triangleNodes.push_back({ val2, val3, -2 });
-            triangleNodes.push_back({ val3, val1, -3 });
-
-            // Ensure the triangle is oriented counter-clockwise for consistency in the algorithm
-            double cross = (triangleNodes[1].x - triangleNodes[0].x) * (triangleNodes[2].y - triangleNodes[0].y)
-             - (triangleNodes[1].y - triangleNodes[0].y) * (triangleNodes[2].x - triangleNodes[0].x);
-            if (cross > 0)
-                std::swap(triangleNodes[1], triangleNodes[2]);
-
-
-            triangleEdges.push_back({ triangleNodes[0].Node_id, triangleNodes[1].Node_id, -1 });
-            triangleEdges.push_back({ triangleNodes[1].Node_id, triangleNodes[2].Node_id, -2 });
-            triangleEdges.push_back({ triangleNodes[2].Node_id, triangleNodes[0].Node_id, -3 });
-            triangleElements.push_back({ triangleNodes[0].Node_id, triangleNodes[2].Node_id, triangleNodes[1].Node_id, -1 }); // Single super-triangle element
-
-            return {triangleNodes, triangleElements, triangleEdges};
-        }
 
         // This function implements the Bowyer-Watson algorithm for Delaunay triangulation
         std::vector<Element> bowyerWatson() {

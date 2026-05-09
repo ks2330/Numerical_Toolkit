@@ -8,13 +8,13 @@
 
 namespace app_support::FEM::run
 {
-    meshgeneration::Mesh run_FEM(std::string shape, double dim1, double dim2, int segsPerUnit, int numRandomNodes) {
+    meshgeneration::Mesh run_FEM() {
         std::cout << "This is the UI application for the Numerical Toolkit.\n";
         std::cout << "Please run the individual test applications to see specific functionalities in action.\n";
         meshgeneration::Mesh mesh;
         //mesh.initialize(shape, static_cast<int>(dim1), static_cast<int>(dim2), segsPerUnit);
         mesh.init("results/csv/ushape_nodes.csv");
-        mesh.generateRandomNodes(numRandomNodes, static_cast<int>(dim1), static_cast<int>(dim2), "poisson");
+        mesh.generateRandomNodes();
 
         std::cout << "Generated rectangular mesh with " << mesh.nodes.size() << " nodes.\n";
         
@@ -22,7 +22,7 @@ namespace app_support::FEM::run
     }
 
 
-    void run_Triangulation(meshgeneration::Mesh& mesh, int nx, int ny) {
+    void run_Triangulation(meshgeneration::Mesh& mesh) {
         mesh.triangulate();   
     }
 
@@ -47,10 +47,10 @@ namespace app_support::FEM::run
     return T;
     } 
 
-    meshgeneration::Mesh initialise_from_CSV(std::string filename, double dim1, double dim2, int numRandomNodes) {
+    meshgeneration::Mesh initialise_from_CSV(std::string filename) {
         meshgeneration::Mesh mesh;
         mesh.init(filename);
-        mesh.generateRandomNodes(numRandomNodes, static_cast<int>(dim1), static_cast<int>(dim2), "poisson");
+        mesh.generateRandomNodes();
         return mesh;
     }
 
