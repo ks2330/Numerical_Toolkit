@@ -9,6 +9,16 @@ FetchContent_Declare(
     GIT_REPOSITORY https://gitlab.com/libeigen/eigen.git
     GIT_TAG        3.4.0
 )
+
+# When including Eigen via FetchContent, we only want the header-only library.
+# Explicitly disable building Eigen's tests, docs, demos, and blas components
+# to prevent it from running configuration checks that are failing in your
+# environment. This is a robust way to include header-only dependencies.
+set(EIGEN_BUILD_TESTING OFF)
+set(EIGEN_BUILD_DOCS OFF) # Note: In Eigen 3.4.0 it's EIGEN_BUILD_DOCS
+set(EIGEN_BUILD_DEMOS OFF)
+set(EIGEN_BUILD_BLAS OFF)
+
 FetchContent_MakeAvailable(Eigen)
 
 set(CMAKE_CXX_STANDARD 20)
@@ -74,3 +84,4 @@ target_link_libraries(numerical_toolkit PUBLIC Eigen3::Eigen)
 add_subdirectory(apps/lid_driven_cavity)
 add_subdirectory(apps/1d_heat_equation)
 add_subdirectory(apps/UI)
+# ad

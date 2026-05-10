@@ -20,6 +20,7 @@ struct Config {
     std::string outputCSV;
     std::string triangulationCSV;
     std::string solutionCSV;
+    std::string aerfoilDAT;
 
 };
 
@@ -29,16 +30,17 @@ Config config = {
     .segsPerUnit = 12,
     .numRandomNodes = 100,
     .shape = "ushape", // "rectangle", "circle", "both", "triangle" (not implemented yet), "ushape"
-    .shapeCSV = "results/csv/Nodes.csv",
+    .shapeCSV = "results/csv/aerfoilsmth.dat",
     .boundaryCSV = "results/csv/boundary_nodes_rectangular.csv",
     .outputCSV = "results/csv/ushape_nodes.csv",
     .triangulationCSV = "results/csv/triangulation.csv",
-    .solutionCSV = "results/csv/steady_state_nodes.csv"
+    .solutionCSV = "results/csv/steady_state_nodes.csv",
+    .aerfoilDAT = "results/dat/aerfoil.dat",
 };
 
 int main() {
     //meshgeneration::Mesh mesh = app_support::FEM::run::run_FEM(shape, nx, ny, segsPerUnit, numRandomNodes);
-    meshgeneration::Mesh mesh = app_support::FEM::run::initialise_from_CSV(config.shapeCSV);
+    meshgeneration::Mesh mesh = app_support::FEM::run::initialise_from_CSV(config.aerfoilDAT);
     app_support::FEM::run::run_Triangulation(mesh);
     app_support::FEM::UI::write_boundry_nodes_to_csv(mesh, mesh.nodes, config.boundaryCSV);
     app_support::FEM::UI::write_triangulation_to_csv(mesh, mesh.elements, mesh.nodes, config.triangulationCSV);

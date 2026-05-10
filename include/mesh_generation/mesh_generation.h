@@ -9,6 +9,7 @@
 #include <fstream>
 #include <sstream>
 #include <span>
+#include <filesystem>
 
 #include "mesh_generation/mesh_types.h"
 #include "mesh_generation/shape_generators.h"
@@ -22,13 +23,25 @@ namespace meshgeneration {
         std::vector<Element> elements;
         std::vector<Edge> edges;
         std::vector<Edge> boundaryEdges;
+        std::vector<Node> holes;
 
         // Loads boundary corner nodes from a 2-column CSV (x,y) and interpolates
         // edges between each consecutive pair of corners.
         void init(std::string filename) {
             nodes.clear(); edges.clear(); holes.clear(); outerBoundary.clear();
-            ParseBoundaryCSV(filename);
-            CreateOuterBoundary();
+            std::string ext = std::filesystem::path(filename).extension().string();
+            if (ext == ".csv") {
+                ParseBoundaryCSV(filename);
+                std::cout << "Loaded " << nodes.size() << " nodes from " << filename << "\n";
+                CreateOuterBoundary();
+            } else if (ext == ".dat") {
+                ParseAeofoilDAT(filename);
+                std::cout << "Loaded " << nodes.size() << " nodes from " << filename << "\n";
+                CreateOuterBoundary();
+            } else {
+                std::cerr << "Unsupported file format: " << ext << "\n";
+                return;
+            }
             GetInteriorNodeNumber();
             buildNodeIndexMap();
             bool isGenerated = true;
@@ -101,6 +114,23 @@ namespace meshgeneration {
             for (int i = 0; i < totalBoundaryNodes; ++i)
                 edges.push_back({nodes[i].Node_id, nodes[(i+1) % totalBoundaryNodes].Node_id, -1});
             boundaryEdges = edges;
+        }
+
+        void CreateAeofoilBoundary() {
+            if (holes.empty()) return;
+            std::vector<Node> bbox = GetBoundingBox(holes);
+            double minX = bbox[0].x * 1000, maxX = bbox[1].x * 1000;
+            double minY = bbox[0].y * 1000, maxY = bbox[2].y * 1000;
+            std::vector<Node> withInterp;
+            std::vector<Node> boundaryNodes;
+            std::vector<Node> TopLeft = {{minX, maxY, -1}};
+            std::vector<Node> TopRight = {{maxX, maxY, -2}};
+            std::vector<Node> BottomLeft = {{minX, minY, -3}};
+            std::vector<Node> BottomRight = {{maxX, minY, -4}};
+            boundaryNodes.push_back(TopLeft[0]);
+            boundaryNodes.push_back(TopRight[0]);
+            boundaryNodes.push_back(BottomLeft[0]);
+            boundaryNodes.push_back(BottomRight[0]);
         }
         
         void GetInteriorNodeNumber(){
@@ -543,7 +573,7 @@ namespace meshgeneration {
             elements.erase(std::remove_if(elements.begin(), elements.end(), [&](const Element& e) {
                 Node centroid = computeCentroid(e);
                 for (const auto& hole : holes) {
-                    if (isPointInPolygon(centroid, hole)) return true;
+                    if (isPointInPolygon(centroid, holes)) return true;
                 }
                 return false;
             }), elements.end());
@@ -612,7 +642,6 @@ namespace meshgeneration {
 
         int totalBoundaryNodes = 0;
         std::vector<Node> outerBoundary;
-        std::vector<std::vector<Node>> holes;
 
         // Returns true if Point D is inside the circumcircle of ABC
         static bool isInCircle(Node A, Node B, Node C, Node D) {
