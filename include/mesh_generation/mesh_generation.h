@@ -58,6 +58,26 @@ namespace meshgeneration {
             file.close();
         }
 
+        void ParseAeofoilDAT(std::string filename) {
+            std::ifstream file(filename);
+            if (!file.is_open()) {
+                std::cerr << "Failed to open file: " << filename << "\n";
+                return;
+            }
+            std::string line;
+            while (std::getline(file, line)) {
+                std::istringstream iss(line);
+                double x, y;
+
+                if (iss >> x >> y) {
+                    nodes.push_back({x,y, static_cast<int>(nodes.size())});
+                } else {
+                    std::cerr << "Warning: COuld not parse line: " << line << "\n";
+                }
+            }
+            file.close();
+        }
+
         void CreateOuterBoundary() {
             if (nodes.empty()) return;
             // Interpolate additional nodes along each edge between corners
