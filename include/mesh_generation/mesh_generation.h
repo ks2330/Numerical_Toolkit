@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include <string>
 #include <iostream>
 #include <cmath>
@@ -19,7 +19,7 @@ namespace meshgeneration {
 
     class Mesh {
     public:
-        std::vector<Node> nodes;        // flat combined list — node.Node_id == index in this vector
+        std::vector<Node> nodes; 
         std::vector<Element> elements;
         std::vector<Edge> edges;
         std::vector<Edge> boundaryEdges;
@@ -28,6 +28,7 @@ namespace meshgeneration {
         std::vector<Node> holeNodes;       // inner hole / aerofoil boundary
         std::vector<Node> internalNodes;   // Poisson-sampled interior
 
+        double chord;   // characteristic length for spacing (used for aerofoil and Poisson sampling)
         // Named boundary groups: group_id → label (e.g. {0,"outer"}, {1,"aerofoil"})
         // Solver applies BCs via: if (node.group_id == groupId("inlet"))
         std::map<int, std::string> boundaryGroups;
@@ -52,8 +53,8 @@ namespace meshgeneration {
                 ParseBoundaryCSV(filename);
                 std::cout << "Loaded " << nodes.size() << " corner nodes from " << filename << "\n";
                 registerGroup(0, "outer");
-                CreateOuterBoundary();      // interpolates corners → boundaryNodes, clears temp nodes
-                buildFlatNodeList();        // assigns final sequential IDs, nodes = boundaryNodes
+                CreateOuterBoundary();
+                buildFlatNodeList();
                 buildEdges(boundaryNodes, 0);
                 boundaryEdges = edges;
             } else if (ext == ".dat") {
@@ -61,9 +62,9 @@ namespace meshgeneration {
                 std::cout << "Loaded " << holeNodes.size() << " aerofoil nodes from " << filename << "\n";
                 registerGroup(0, "outer");
                 registerGroup(1, "aerofoil");
-                CreateAerofoilBoundary();   // creates outer box → boundaryNodes, no edges yet
+                CreateAerofoilBoundary();
                 std::cout << "Created bounding box with " << boundaryNodes.size() << " boundary nodes.\n";
-                buildFlatNodeList();        // boundary: 0..N_b-1, hole: N_b..N_b+N_h-1
+                buildFlatNodeList();
                 buildEdges(boundaryNodes, 0);
                 buildEdges(holeNodes, 1);
                 boundaryEdges = edges;
@@ -133,24 +134,33 @@ namespace meshgeneration {
                 }
             }
             boundaryNodes = withInterp;
-            nodes.clear();  // temp corners no longer needed; buildFlatNodeList will repopulate
+            nodes.clear();
         }
 
         void CreateAerofoilBoundary() {
             if (holeNodes.empty()) return;
             std::vector<Node> bbox = GetBoundingBox(holeNodes);
-            double minX = bbox[0].x * 1000, maxX = bbox[1].x * 1000;
-            double minY = bbox[0].y * 1000, maxY = bbox[2].y * 1000;
 
-            Node TL = {minX, maxY, -1};
-            Node TR = {maxX, maxY, -1};
-            Node BR = {maxX, minY, -1};
-            Node BL = {minX, minY, -1};
+            double chord = bbox[1].x - bbox[0].x;   // aerofoil chord length
+            if (chord <= 0) chord = 1.0;
 
+            // Additive offsets based on chord — works regardless of where the aerofoil sits
+            double domainMinX = bbox[0].x - 1.0 * chord;   // 10c upstream
+            double domainMaxX = bbox[1].x + 1.50 * chord;   // 15c downstream (wake)
+            double domainMinY = bbox[0].y - 1.0 * chord;   // 10c below
+            double domainMaxY = bbox[2].y + 1.0 * chord;   // 10c above
+
+            Node TL = {domainMinX, domainMaxY, -1};
+            Node TR = {domainMaxX, domainMaxY, -1};
+            Node BR = {domainMaxX, domainMinY, -1};
+            Node BL = {domainMinX, domainMinY, -1};
+
+            // Segment spacing scales with chord so density is consistent
+            double segLen = chord * 0.5;
             auto interpolate = [&](const Node& a, const Node& b) {
                 std::vector<Node> result;
                 double len = distance(a, b);
-                int segs = std::max(1, static_cast<int>(len / 50.0));
+                int segs = std::max(1, static_cast<int>(len / segLen));
                 for (int s = 0; s < segs; ++s) {
                     double t = static_cast<double>(s) / segs;
                     result.push_back({a.x + t*(b.x-a.x), a.y + t*(b.y-a.y), -1, NodeType::Boundary, 0});
@@ -208,7 +218,7 @@ namespace meshgeneration {
 
         void GetInteriorNodeNumber() {
             auto bbox = GetBoundingBox(boundaryNodes.empty() ? nodes : boundaryNodes);
-            numRandomNodes = static_cast<int>((boundaryEdges.size() * boundaryEdges.size()) / 2500);
+            numRandomNodes = static_cast<int>((boundaryEdges.size() * boundaryEdges.size()) / 1000);
         }
 
         // Generates random interior nodes via Poisson disc sampling.
@@ -218,24 +228,28 @@ namespace meshgeneration {
             double minY = boundingBoxNodes[0].y, maxY = boundingBoxNodes[3].y;
 
             int k = 30;
-            double s = std::min((maxX - minX), (maxY - minY)) / std::sqrt(numRandomNodes) / std::sqrt(2.0);
-
+            double s_min = std::min((maxX - minX), (maxY - minY)) / std::sqrt(numRandomNodes) * 0.05;  // base spacing tuned for good results at 100-200 nodes; scales with domain size and node count
             std::vector<Node> activeNodes = initPoisson();
 
             while (!activeNodes.empty() && internalNodes.size() < static_cast<size_t>(numRandomNodes)) {
                 int idx = rand() % activeNodes.size();
                 Node activeNode = activeNodes[idx];
+                double d = GetClosestHoleDistance(activeNode);
+                double growth_rate = 10.0;
+                double s_max = s_min * 5.0;
+                double s_varied = std::clamp(s_min + growth_rate * d, s_min, s_max);
+
                 bool found = false;
                 for (int tries = 0; tries < k; ++tries) {
                     double angle = static_cast<double>(rand()) / RAND_MAX * 2 * M_PI;
-                    double radius = s * (1 + static_cast<double>(rand()) / RAND_MAX);
+                    double radius = s_varied * (1 + static_cast<double>(rand()) / RAND_MAX);
                     int nextId = static_cast<int>(nodes.size());
                     Node newNode = {activeNode.x + radius * cos(angle),
                                     activeNode.y + radius * sin(angle),
                                     nextId, NodeType::Internal, -1};
                     bool inOuter = isPointInPolygon(newNode, boundaryNodes);
                     bool inHole  = !holeNodes.empty() && isPointInPolygon(newNode, holeNodes);
-                    if (inOuter && !inHole && !isSdistanceTooClose(newNode, s)) {
+                    if (inOuter && !inHole && !isSdistanceTooClose(newNode, s_varied, s_min)) {
                         internalNodes.push_back(newNode);
                         nodes.push_back(newNode);   // ID == index since appended at end
                         activeNodes.push_back(newNode);
@@ -249,9 +263,17 @@ namespace meshgeneration {
 
         std::vector<Node> initPoisson() {
             int nextId = static_cast<int>(nodes.size());
-            std::vector<Node> boundingBoxNodes = GetBoundingBox(boundaryNodes);
-            double minX = boundingBoxNodes[0].x, maxX = boundingBoxNodes[1].x;
-            double minY = boundingBoxNodes[0].y, maxY = boundingBoxNodes[3].y;
+
+            double minX, maxX, minY, maxY;
+            if (boundaryNodes.empty()) {
+                std::vector<Node> bbox = GetBoundingBox(boundaryNodes);
+                minX = bbox[0].x; maxX = bbox[1].x; minY = bbox[0].y; maxY = bbox[3].y;
+            } else if (!holeNodes.empty()) {
+                std::vector<Node> bbox = GetBoundingBox(holeNodes);
+                minX = bbox[0].x; maxX = bbox[1].x; minY = bbox[0].y; maxY = bbox[3].y;
+            }
+
+
             std::vector<Node> activeNodes;
 
             if (boundaryNodes.empty()) return activeNodes;
@@ -278,12 +300,27 @@ namespace meshgeneration {
             return activeNodes;
         }
 
-        bool isSdistanceTooClose(const Node& node, double s) {
+        bool isSdistanceTooClose(const Node& node, double s, double s_boundary) {
+            for (const auto& b : boundaryNodes) {
+                double dx = b.x - node.x, dy = b.y - node.y;
+                if (dx*dx + dy*dy < s_boundary*s_boundary) return true;
+            }
             for (const auto& n : internalNodes) {
                 double dx = n.x - node.x, dy = n.y - node.y;
                 if (dx*dx + dy*dy < s*s) return true;
             }
             return false;
+        }
+
+
+        double GetClosestHoleDistance(const Node& node) {
+            double minDist = std::numeric_limits<double>::max();
+            for (const auto& n : holeNodes) {
+                double dx = n.x - node.x, dy = n.y - node.y;
+                double distSq = dx*dx + dy*dy;
+                if (distSq < minDist) minDist = distSq;
+            }
+            return std::sqrt(minDist);
         }
 
         bool edgesIntersect(const Edge& e1, const Edge& e2) {
@@ -370,6 +407,7 @@ namespace meshgeneration {
             }
             enforceConstraint();
             enforceOutsideConstraints();
+            deleteHoles();
         }
 
         std::vector<Edge> findCavityEdges(const std::vector<Element>& badTriangles) {
@@ -437,6 +475,7 @@ namespace meshgeneration {
         }
 
         void insertNode(const Node& newNode) {
+            if (!holeNodes.empty() && isPointInPolygon(newNode, holeNodes)) return;
             Node n  = newNode;
             n.Node_id   = static_cast<int>(nodes.size());  // appended at end → ID == index
             n.type      = NodeType::Internal;
