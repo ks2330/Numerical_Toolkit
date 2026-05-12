@@ -72,6 +72,7 @@ namespace meshgeneration {
                 std::cerr << "Unsupported file format: " << ext << "\n";
                 return;
             }
+            BoundaryLayerSeeding();
             GetInteriorNodeNumber();
         }
 
@@ -114,6 +115,7 @@ namespace meshgeneration {
                 } else {
                     std::cerr << "Warning: Could not parse line: " << line << "\n";
                 }
+
             }
             file.close();
         }
@@ -141,7 +143,8 @@ namespace meshgeneration {
             if (holeNodes.empty()) return;
             std::vector<Node> bbox = GetBoundingBox(holeNodes);
 
-            double chord = bbox[1].x - bbox[0].x;   // aerofoil chord length
+            chord = bbox[1].x - bbox[0].x;   // aerofoil chord length
+            std::cout << "Aerofoil chord length is: " << chord << "\n";
             if (chord <= 0) chord = 1.0;
 
             // Additive offsets based on chord — works regardless of where the aerofoil sits
@@ -265,14 +268,15 @@ namespace meshgeneration {
             int nextId = static_cast<int>(nodes.size());
 
             double minX, maxX, minY, maxY;
-            if (boundaryNodes.empty()) {
-                std::vector<Node> bbox = GetBoundingBox(boundaryNodes);
+            if (!boundaryNodes.empty()) {
+                auto bbox = GetBoundingBox(boundaryNodes);
                 minX = bbox[0].x; maxX = bbox[1].x; minY = bbox[0].y; maxY = bbox[3].y;
             } else if (!holeNodes.empty()) {
-                std::vector<Node> bbox = GetBoundingBox(holeNodes);
+                auto bbox = GetBoundingBox(holeNodes);
                 minX = bbox[0].x; maxX = bbox[1].x; minY = bbox[0].y; maxY = bbox[3].y;
+            } else {
+                return {};  // nothing to work with
             }
-
 
             std::vector<Node> activeNodes;
 
@@ -292,12 +296,65 @@ namespace meshgeneration {
                     nodes.push_back(seed);
                     activeNodes.push_back(seed);
                     placed = true;
-                    std::cout << "Placed initial Poisson node at (" << seed.x << ", " << seed.y << ")\n";
                 }
             }
             if (!placed)
                 std::cerr << "Failed to place initial Poisson node after 10000 attempts.\n";
             return activeNodes;
+        }
+
+        inline double getVectorLength(const Node& a, const Node& b) {
+            double dx = b.x - a.x, dy = b.y - a.y;
+            double len = std::sqrt(dx*dx + dy*dy);
+            return len;
+        }
+
+        void BoundaryLayerSeeding(){
+            if (boundaryEdges.empty()) return;
+            if (holeNodes.empty()) return;
+
+            int numLayers = 3;
+            std::pair<double, double> perpendicular;
+            std::pair<double, double> tangent;
+            std::pair<double, double> unitVec;
+
+            bool isCCW_BOOL = false;
+            if (isCCW(holeNodes)) {
+                isCCW_BOOL = true;
+            } else {
+                isCCW_BOOL = false;
+            }
+
+            double ratio = 1.5;
+            double h0 = chord * 0.01;   // initial layer spacing based on chord length; can be tuned for different results
+            std::cout << "Chord Length is:" << chord << "\n";
+            std::cout << "Initial Layer Spacing is:" << h0 << "\n";
+
+            for (int j = 0; j < static_cast<int>(holeNodes.size()); ++j) {
+                double layerDistance = 0;
+                if (isCCW_BOOL) {
+                    perpendicular = edgeDirection(holeNodes[j], holeNodes[(j + 1) % holeNodes.size()]);
+                    tangent = {perpendicular.second, -perpendicular.first};
+                    double len = getVectorLength(holeNodes[j], holeNodes[(j + 1) % holeNodes.size()]); 
+                    unitVec = {tangent.first / len, tangent.second / len};
+                } else {
+                    perpendicular = edgeDirection(holeNodes[(j + 1) % holeNodes.size()], holeNodes[j]);
+                    tangent = {-perpendicular.second, perpendicular.first};
+                    double len = getVectorLength(holeNodes[(j + 1) % holeNodes.size()], holeNodes[j]);
+                    unitVec = {tangent.first / len, tangent.second / len};
+                }    
+                for (int i = 0; i < numLayers; ++i) {
+                    layerDistance += h0 * std::pow(ratio, i); // geometric growth
+                    Node NewNode = {holeNodes[j].x + unitVec.first * layerDistance, holeNodes[j].y + unitVec.second * layerDistance, static_cast<int>(nodes.size()), NodeType::Internal, -1};
+                    if (isPointInPolygon(NewNode, boundaryNodes) && !isPointInPolygon(NewNode, holeNodes)) {
+                        internalNodes.push_back(NewNode);
+                        nodes.push_back(NewNode);
+                    } else {
+                        break;
+                    }   
+                }
+            }
+
         }
 
         bool isSdistanceTooClose(const Node& node, double s, double s_boundary) {
@@ -629,6 +686,20 @@ namespace meshgeneration {
     private:
         int element_id_counter = 0;
         int numRandomNodes = 0;
+        double Area;
+
+
+        static bool isCCW(std::vector<Node> NodeList){
+            double LocalSum = 0;
+            for (int i = 0; i < NodeList.size(); ++i) {
+                LocalSum += (NodeList[(i+1)%NodeList.size()].x - NodeList[i].x) * (NodeList[(i+1)%NodeList.size()].y + NodeList[i].y);
+            }
+            return LocalSum < 0;
+        }
+
+        static std::pair<double, double> edgeDirection(const Node& a, const Node& b){
+            return {b.x - a.x, b.y - a.y};
+        }
 
         static bool isInCircle(Node A, Node B, Node C, Node D) {
             double adx = A.x-D.x, ady = A.y-D.y;
