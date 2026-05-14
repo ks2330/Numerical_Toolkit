@@ -12,8 +12,13 @@ rm -f results/csv/steady_state_elements.csv
 rm -f results/csv/triangulation.csv
 rm -f results/png/mesh_visualisation.png
 rm -f results/png/steady_state_plot.png
-# -- Create Boundary Plots --
-echo "Boundary Shape Created"
+rm -f results/png/mesh_quality_comparison.png
+rm -f results/metrics/angle_distribution.csv
+rm -f results/metrics/aspect_ratio_distribution.csv
+rm -f results/metrics/angle_distribution_improved.csv
+rm -f results/metrics/aspect_ratio_distribution_improved.csv
+
+mkdir -p results/metrics
 # ── 1. Configure ─────────────────────────────────────────────────────────────
 if [ ! -d "build" ]; then
     echo "[1/4] Configuring CMake..."
@@ -57,5 +62,6 @@ python apps/UI/mesh_visualisation_tool.py
 python apps/UI/plot_steady_state.py
 
 echo "Done."
-echo "  CSVs -> results/csv/"
-echo "  PNGs -> results/png/"
+echo "  CSVs    -> results/csv/"
+echo "  Metrics -> results/metrics/"
+echo "  PNGs    -> results/png/"

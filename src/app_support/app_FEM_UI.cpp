@@ -64,4 +64,17 @@ namespace app_support::FEM::UI
             << "  " << elemsPath << "\n";
     }
 
+    void write_pressure_field_to_csv(const std::vector<double>& Cp, const meshgeneration::Mesh& mesh, const std::string& outputPath) {
+        std::ofstream file(outputPath);
+        file << "id,x,y,Cp\n";
+        for (int i = 0; i < static_cast<int>(Cp.size()); ++i) {
+            file << i << ","
+                 << mesh.nodes[i].x << ","
+                 << mesh.nodes[i].y << ","
+                 << Cp[i] << "\n";
+        }
+        file.close();
+        std::cout << "Pressure field written to " << outputPath << "\n";
+    }
+
 }

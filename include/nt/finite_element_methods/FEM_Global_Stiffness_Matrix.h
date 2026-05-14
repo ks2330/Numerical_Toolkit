@@ -15,7 +15,7 @@ namespace nt::fem
     };
    
 
-    Matrix3x3 computeElementStiffnessMatrix(const meshgeneration::Mesh& mesh, const meshgeneration::Element& element) {
+    inline Matrix3x3 computeElementStiffnessMatrix(const meshgeneration::Mesh& mesh, const meshgeneration::Element& element) {
         meshgeneration::Node n1 = mesh.getNodeByID(element.n0_id);
         meshgeneration::Node n2 = mesh.getNodeByID(element.n1_id);
         meshgeneration::Node n3 = mesh.getNodeByID(element.n2_id);
@@ -23,6 +23,12 @@ namespace nt::fem
         Matrix3x3 stiffnessMatrix = {0};
 
         double area = 0.5 * std::abs(n1.x * (n2.y - n3.y) + n2.x * (n3.y - n1.y) + n3.x * (n1.y - n2.y));
+        
+        if (area < 1e-14) {
+            std::cerr << "Degenerate element " << element.Element_id
+                    << " (area ≈ 0), skipping\n";
+            return stiffnessMatrix;  // returns zero matrix, safe to assemble
+        }
 
         double b[3] = { n2.y - n3.y, n3.y - n1.y, n1.y - n2.y };
         double c[3] = { n3.x - n2.x, n1.x - n3.x, n2.x - n1.x };
@@ -61,6 +67,10 @@ namespace nt::fem
     // Applies a Dirichlet BC by eliminating the row/column for nodeID.
     inline void applyDirichletBC(std::vector<std::vector<double>>& K, std::vector<double>& rhs, int nodeID, double value) {
         int N = static_cast<int>(K.size());
+        if (nodeID < 0 || nodeID >= N || (int)rhs.size() != N) {
+            std::cerr << "applyDirichletBC: invalid nodeID " << nodeID << "\n";
+            return;
+        }
         for (int i = 0; i < N; ++i) {
             if (i == nodeID) continue;
             rhs[i] -= K[i][nodeID] * value;
@@ -97,7 +107,12 @@ namespace nt::fem
             x[i] = b[i];
             for (int j = i + 1; j < N; ++j)
                 x[i] -= A[i][j] * x[j];
+            if (std::abs(A[i][i]) < 1e-15) {
+                std::cerr << "Singular matrix at row " << i << " — check boundary conditions\n";
+                return std::vector<double>(N, 0.0);  // or throw
+            }
             x[i] /= A[i][i];
+
         }
         return x;
     }

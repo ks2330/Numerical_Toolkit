@@ -81,6 +81,8 @@ target_link_libraries(numerical_toolkit PUBLIC Eigen3::Eigen)
 # add_subdirectory(tests)
 
 # add_subdirectory(tests)
+file(MAKE_DIRECTORY ${CMAKE_SOURCE_DIR}/results/metrics)
+
 add_subdirectory(apps/lid_driven_cavity)
 add_subdirectory(apps/1d_heat_equation)
 add_subdirectory(apps/UI)

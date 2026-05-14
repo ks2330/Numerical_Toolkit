@@ -4,7 +4,8 @@
 #include <string>
 #include "mesh_generation/mesh_generation.h"
 #include "nt/finite_element_methods/FEM_Global_Stiffness_Matrix.h"
-//#include "nt/setup_FEM/setup.h"
+#include "nt/finite_element_methods/FEM_Heat_Equation.h"
+#include "nt/finite_element_methods/FEM_Potential_Flow.h"
 
 namespace app_support::FEM::run
 {
@@ -26,26 +27,24 @@ namespace app_support::FEM::run
         mesh.triangulate();   
     }
 
-    std::vector<double> run_FEM_Heat_Equation(meshgeneration::Mesh& mesh) {
-        // Solve steady-state Laplace (heat) equation on a 2x6 FEM mesh.
-        // Dirichlet BCs: T=100 at x=0 (left wall), T=0 at x=6 (right wall).
-        // Neumann (zero flux) BCs on top and bottom — satisfied naturally.
-        // Exact solution: T(x) = 100*(6-x)/6   (linear in x)
+    std::vector<double> run_FEM_Heat_Equation(meshgeneration::Mesh& mesh,
+                                               int inletGroup, double T_inlet,
+                                               int outletGroup, double T_outlet) {
         const int N = static_cast<int>(mesh.nodes.size());
-        const int MaxX = mesh.getMaxNodeCol();
-
         auto K = nt::fem::assembleGlobalStiffnessMatrix(mesh);
         std::vector<double> rhs(N, 0.0);
+        nt::fem::applyHeatEquationBCs(mesh, K, rhs, inletGroup, T_inlet, outletGroup, T_outlet);
+        return nt::fem::gaussianElimination(K, rhs);
+    }
 
-        for (size_t i = 0; i < mesh.nodes.size(); ++i) {
-            if (std::abs(mesh.nodes[i].x) < 1e-9)
-                nt::fem::applyDirichletBC(K, rhs, i, 100.0);  // left wall
-            if (std::abs(mesh.nodes[i].x - MaxX) < 1e-9)
-                nt::fem::applyDirichletBC(K, rhs, i, 0.0);    // right wall
-        }
-        std::vector<double> T = nt::fem::gaussianElimination(K, rhs);
-    return T;
-    } 
+    std::vector<double> run_Potential_Flow(meshgeneration::Mesh& mesh,
+                                           double U_inf, double alpha = 0.0) {
+        const int N = static_cast<int>(mesh.nodes.size());
+        auto K = nt::fem::assembleGlobalStiffnessMatrix(mesh);
+        std::vector<double> rhs(N, 0.0);
+        nt::fem::applyPotentialFlowBCs(mesh, K, rhs, U_inf, alpha);
+        return nt::fem::gaussianElimination(K, rhs);
+    }
 
     meshgeneration::Mesh initialise_from_CSV(std::string filename) {
         meshgeneration::Mesh mesh;

@@ -10,6 +10,7 @@
 #include <sstream>
 #include <span>
 #include <filesystem>
+#include <cassert>
 
 #include "mesh_generation/mesh_types.h"
 #include "mesh_generation/shape_generators.h"
@@ -27,6 +28,8 @@ namespace meshgeneration {
         std::vector<Node> boundaryNodes;   // outer boundary polygon
         std::vector<Node> holeNodes;       // inner hole / aerofoil boundary
         std::vector<Node> internalNodes;   // Poisson-sampled interior
+
+        std::vector<std::vector<int>> neighbours;
 
         double chord;   // characteristic length for spacing (used for aerofoil and Poisson sampling)
         // Named boundary groups: group_id → label (e.g. {0,"outer"}, {1,"aerofoil"})
@@ -51,7 +54,11 @@ namespace meshgeneration {
             std::string ext = std::filesystem::path(filename).extension().string();
             if (ext == ".csv") {
                 ParseBoundaryCSV(filename);
-                std::cout << "Loaded " << nodes.size() << " corner nodes from " << filename << "\n";
+                if (nodes.empty()) {
+                    std::cerr << "No nodes loaded from " << filename << "\n";
+                    return;
+                }
+                //std::cout << "Loaded " << nodes.size() << " corner nodes from " << filename << "\n";
                 registerGroup(0, "outer");
                 CreateOuterBoundary();
                 buildFlatNodeList();
@@ -59,11 +66,17 @@ namespace meshgeneration {
                 boundaryEdges = edges;
             } else if (ext == ".dat") {
                 ParseAerofoilDAT(filename);
-                std::cout << "Loaded " << holeNodes.size() << " aerofoil nodes from " << filename << "\n";
+                if (holeNodes.empty()) {
+                    std::cerr << "No nodes loaded from " << filename << "\n";
+                    return;
+                }
+                //std::cout << "Loaded " << holeNodes.size() << " aerofoil nodes from " << filename << "\n";
                 registerGroup(0, "outer");
                 registerGroup(1, "aerofoil");
+                registerGroup(2, "inlet");
+                registerGroup(3, "outlet");
                 CreateAerofoilBoundary();
-                std::cout << "Created bounding box with " << boundaryNodes.size() << " boundary nodes.\n";
+                //std::cout << "Created bounding box with " << boundaryNodes.size() << " boundary nodes.\n";
                 buildFlatNodeList();
                 buildEdges(boundaryNodes, 0);
                 buildEdges(holeNodes, 1);
@@ -144,7 +157,7 @@ namespace meshgeneration {
             std::vector<Node> bbox = GetBoundingBox(holeNodes);
 
             chord = bbox[1].x - bbox[0].x;   // aerofoil chord length
-            std::cout << "Aerofoil chord length is: " << chord << "\n";
+            //std::cout << "Aerofoil chord length is: " << chord << "\n";
             if (chord <= 0) chord = 1.0;
 
             // Additive offsets based on chord — works regardless of where the aerofoil sits
@@ -160,21 +173,21 @@ namespace meshgeneration {
 
             // Segment spacing scales with chord so density is consistent
             double segLen = chord * 0.5;
-            auto interpolate = [&](const Node& a, const Node& b) {
+            auto interpolate = [&](const Node& a, const Node& b, int group_id) {
                 std::vector<Node> result;
                 double len = distance(a, b);
-                int segs = std::max(1, static_cast<int>(len / segLen));
+                int segs = std::max(1, static_cast<int>(3 * len / segLen));
                 for (int s = 0; s < segs; ++s) {
                     double t = static_cast<double>(s) / segs;
-                    result.push_back({a.x + t*(b.x-a.x), a.y + t*(b.y-a.y), -1, NodeType::Boundary, 0});
+                    result.push_back({a.x + t*(b.x-a.x), a.y + t*(b.y-a.y), -1, NodeType::Boundary, group_id});
                 }
                 return result;
             };
 
-            // CCW: TL → TR → BR → BL
+            // CCW: TL → TR (outer) → TR → BR (outlet) → BR → BL (outer) → BL → TL (inlet)
             std::vector<Node> boxNodes;
-            for (auto& seg : {interpolate(TL, TR), interpolate(TR, BR),
-                               interpolate(BR, BL), interpolate(BL, TL)})
+            for (auto& seg : {interpolate(TL, TR, 0), interpolate(TR, BR, 3),
+                               interpolate(BR, BL, 0), interpolate(BL, TL, 2)})
                 boxNodes.insert(boxNodes.end(), seg.begin(), seg.end());
 
             boundaryNodes = boxNodes;
@@ -210,6 +223,26 @@ namespace meshgeneration {
             }
             for (int i = 0; i < static_cast<int>(internalNodes.size()); ++i)
                 internalNodes[i].Node_id = hOffset + i;
+        }
+
+        void buildNeighbours(){
+            neighbours.clear();
+            neighbours.resize(nodes.size());
+            for (const auto& e : elements) {
+                neighbours[e.n0_id].push_back(e.n1_id);
+                neighbours[e.n0_id].push_back(e.n2_id);
+
+                neighbours[e.n1_id].push_back(e.n0_id);
+                neighbours[e.n1_id].push_back(e.n2_id);
+
+                neighbours[e.n2_id].push_back(e.n0_id);
+                neighbours[e.n2_id].push_back(e.n1_id);
+            }
+
+            for (auto& n : neighbours) {
+                std::sort(n.begin(), n.end());
+                n.erase(std::unique(n.begin(), n.end()), n.end());
+            }
         }
 
         // Builds closed polygon edges for a node group using their final IDs.
@@ -327,8 +360,8 @@ namespace meshgeneration {
 
             double ratio = 1.5;
             double h0 = chord * 0.01;   // initial layer spacing based on chord length; can be tuned for different results
-            std::cout << "Chord Length is:" << chord << "\n";
-            std::cout << "Initial Layer Spacing is:" << h0 << "\n";
+            //std::cout << "Chord Length is:" << chord << "\n";
+            //std::cout << "Initial Layer Spacing is:" << h0 << "\n";
 
             for (int j = 0; j < static_cast<int>(holeNodes.size()); ++j) {
                 double layerDistance = 0;
@@ -381,6 +414,8 @@ namespace meshgeneration {
         }
 
         bool edgesIntersect(const Edge& e1, const Edge& e2) {
+            assert(e1.n0_id >= 0 && e1.n0_id < (int)nodes.size());
+            assert(e1.n1_id >= 0 && e1.n1_id < (int)nodes.size());
             const Node& p1 = nodes[e1.n0_id]; const Node& p2 = nodes[e1.n1_id];
             const Node& q1 = nodes[e2.n0_id]; const Node& q2 = nodes[e2.n1_id];
             double rx = p2.x - p1.x, ry = p2.y - p1.y;
@@ -439,11 +474,13 @@ namespace meshgeneration {
             enforceConstraint();
             deleteHoles();
             enforceOutsideConstraints();
-            MetricAngles("angle_distribution.csv");
-            MetricAspectRatios("aspect_ratio_distribution.csv");
+            MetricAngles("results/metrics/angle_distribution.csv");
+            MetricAspectRatios("results/metrics/aspect_ratio_distribution.csv");
             ImproveMesh();
-            MetricAngles("angle_distribution_improved.csv");
-            MetricAspectRatios("aspect_ratio_distribution_improved.csv");
+            buildNeighbours();
+            LaplacianSmoothing();
+            MetricAngles("results/metrics/angle_distribution_improved.csv");
+            MetricAspectRatios("results/metrics/aspect_ratio_distribution_improved.csv");
         }
 
         void ImproveMesh() {
@@ -465,6 +502,39 @@ namespace meshgeneration {
             enforceConstraint();
             enforceOutsideConstraints();
             deleteHoles();
+        }
+
+        void LaplacianSmoothing(int iterations = 10){
+            if (nodes.empty()) return;
+            std::cout << "Laplacian smoothing...\n";
+            for (int i = 0; i < iterations; ++i) {
+                std::vector<std::pair<double,double>> newPos(nodes.size());
+                for (int n = 0; n < static_cast<int>(neighbours.size()); ++n){
+                    if (nodes[n].type != NodeType::Internal) continue;
+                    bool adjacentToHole = false;
+                    for (int nb : neighbours[n])
+                        if (nodes[nb].type == NodeType::Hole) { adjacentToHole = true; break; }
+                    if (adjacentToHole) { newPos[n] = {nodes[n].x, nodes[n].y}; continue; }
+                    double tx = 0;
+                    double ty = 0;
+                    int NumNode = 0;
+                    for (int neighbourID : neighbours[n]){
+                        tx += nodes[neighbourID].x;
+                        ty += nodes[neighbourID].y;
+                        NumNode++ ;
+                    }
+                    newPos[n] = {tx/NumNode, ty/NumNode};
+                }
+                for (int n = 0; n < static_cast<int>(nodes.size()); ++n) {
+                    if (nodes[n].type != NodeType::Internal) continue;
+                    nodes[n].x = newPos[n].first;
+                    nodes[n].y = newPos[n].second;
+                }
+
+            }
+            deleteHoles();
+            enforceConstraint();
+            enforceOutsideConstraints();
         }
 
         std::vector<Edge> findCavityEdges(const std::vector<Element>& badTriangles) {
@@ -561,6 +631,10 @@ namespace meshgeneration {
                 bins[std::min(static_cast<int>(a * 180.0 / M_PI) / 10, 17)]++;
             }
             std::ofstream f(outputFile);
+            if (!f.is_open()) {
+                std::cerr << "Could not write to " << outputFile << "\n";
+                return;
+            }
             f << "Angle (degrees),Count\n";
             for (size_t i = 0; i < bins.size(); ++i) f << i * 10 << "," << bins[i] << "\n";
             std::cout << "Angle distribution written to " << outputFile << "\n";
@@ -573,6 +647,10 @@ namespace meshgeneration {
                 bins[std::min(static_cast<int>(r / 10), 9)]++;
             }
             std::ofstream f(outputFile);
+            if (!f.is_open()) {
+                std::cerr << "Could not write to " << outputFile << "\n";
+                return;
+            }
             f << "Aspect Ratio,Count\n";
             for (size_t i = 0; i < bins.size(); ++i) f << i * 10 << "," << bins[i] << "\n";
             std::cout << "Aspect ratio distribution written to " << outputFile << "\n";
