@@ -479,6 +479,7 @@ namespace meshgeneration {
             ImproveMesh();
             buildNeighbours();
             LaplacianSmoothing();
+            //flipEdges();
             MetricAngles("results/metrics/angle_distribution_improved.csv");
             MetricAspectRatios("results/metrics/aspect_ratio_distribution_improved.csv");
         }
@@ -490,6 +491,9 @@ namespace meshgeneration {
             while (foundBadElement && iteration < 100) {
                 foundBadElement = false; ++iteration;
                 for (auto& element : elements) {
+                    if (nodes[element.n0_id].type == NodeType::Hole ||
+                        nodes[element.n1_id].type == NodeType::Hole ||
+                        nodes[element.n2_id].type == NodeType::Hole) continue;
                     double angle0 = minAngle(nodes[element.n0_id], nodes[element.n1_id], nodes[element.n2_id]);
                     double ratio  = aspectRatio(nodes[element.n0_id], nodes[element.n1_id], nodes[element.n2_id]);
                     if (angle0 < 20 * M_PI / 180 || ratio > 10) {
@@ -499,9 +503,9 @@ namespace meshgeneration {
                     }
                 }
             }
+            deleteHoles();
             enforceConstraint();
             enforceOutsideConstraints();
-            deleteHoles();
         }
 
         void LaplacianSmoothing(int iterations = 10){
@@ -512,8 +516,9 @@ namespace meshgeneration {
                 for (int n = 0; n < static_cast<int>(neighbours.size()); ++n){
                     if (nodes[n].type != NodeType::Internal) continue;
                     bool adjacentToHole = false;
-                    for (int nb : neighbours[n])
+                    for (int nb : neighbours[n]) 
                         if (nodes[nb].type == NodeType::Hole) { adjacentToHole = true; break; }
+
                     if (adjacentToHole) { newPos[n] = {nodes[n].x, nodes[n].y}; continue; }
                     double tx = 0;
                     double ty = 0;
@@ -623,7 +628,43 @@ namespace meshgeneration {
 
             fillCavity(polygon, n, elements, element_id_counter, nodes, idMap, &boundaryNodes);
         }
+    /*
+        void flipEdges(){
+            for (int i = 0; i < (int)elements.size(); ++i) {
+                for (int j = 0; j < (int)elements.size(); ++j) {
+                    if (i == j) continue;
 
+                    auto& e  = elements[i];
+                    auto& e1 = elements[j];
+
+                    bool n0 = (e.n0_id == e1.n0_id || e.n0_id == e1.n1_id || e.n0_id == e1.n2_id);
+                    bool n1 = (e.n1_id == e1.n0_id || e.n1_id == e1.n1_id || e.n1_id == e1.n2_id);
+                    bool n2 = (e.n2_id == e1.n0_id || e.n2_id == e1.n1_id || e.n2_id == e1.n2_id);
+
+                    if (n0 + n1 + n2 == 2) {
+                        int A_id = !n0 ? e.n0_id : (!n1 ? e.n1_id : e.n2_id);
+
+                        bool m0 = (e1.n0_id == e.n0_id || e1.n0_id == e.n1_id || e1.n0_id == e.n2_id);
+                        bool m1 = (e1.n1_id == e.n0_id || e1.n1_id == e.n1_id || e1.n1_id == e.n2_id);
+
+                        int B_id = !m0 ? e1.n0_id : (!m1 ? e1.n1_id : e1.n2_id);
+
+                        if (A_id < 0 || A_id >= (int)nodes.size()) continue;
+                        if (B_id < 0 || B_id >= (int)nodes.size()) continue;
+
+                        if (isInCircle(nodes[e.n0_id], nodes[e.n1_id], nodes[e.n2_id], nodes[B_id])) {
+                            int S0_id = n0 ? e.n0_id : (n1 ? e.n1_id : e.n2_id);
+                            int S1_id = (e.n0_id != A_id && e.n0_id != S0_id) ? e.n0_id :
+                                        (e.n1_id != A_id && e.n1_id != S0_id) ? e.n1_id : e.n2_id;
+                            e.n0_id  = A_id;  e.n1_id  = B_id;  e.n2_id  = S0_id;
+                            e1.n0_id = A_id;  e1.n1_id = B_id;  e1.n2_id = S1_id;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    */
         void MetricAngles(std::string outputFile) {
             std::vector<int> bins(18, 0);
             for (const auto& e : elements) {

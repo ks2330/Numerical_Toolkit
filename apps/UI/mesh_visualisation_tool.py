@@ -130,13 +130,13 @@ def plot_pressure_field():
         print(f"WARNING: '{cp_path}' not found — skipping pressure field plot.")
         return
 
-    xs, ys, cp = [], [], []
+    xs, ys, cp_vals = [], [], []
     with open(cp_path, newline="") as f:
         for row in csv.DictReader(f):
             xs.append(float(row["x"]))
             ys.append(float(row["y"]))
-            cp.append(float(row["Cp"]))
-    xs, ys, cp = np.array(xs), np.array(ys), np.array(cp)
+            cp_vals.append(float(row["Cp"]))
+    xs, ys, cp_vals = np.array(xs), np.array(ys), np.array(cp_vals)
 
     tris = []
     if os.path.exists(tri_path):
@@ -151,16 +151,124 @@ def plot_pressure_field():
                 except KeyError:
                     pass
 
-    fig, ax = plt.subplots(figsize=(13, 6))
-    if tris:
-        tcf = ax.tricontourf(xs, ys, tris, cp, levels=50, cmap="RdBu_r")
-    else:
-        tcf = ax.tricontourf(xs, ys, cp, levels=50, cmap="RdBu_r")
-    fig.colorbar(tcf, ax=ax, label="Pressure coefficient Cp")
+    BG      = '#0d1117'
+    C_AF    = '#58a6ff'
+    C_UPPER = '#3fb950'
+    C_LOWER = '#f0883e'
+    C_GRID  = '#30363d'
+    C_TEXT  = '#8b949e'
+    CHORD   = 1.0
 
-    ax.set_title("Potential Flow — Pressure Coefficient", fontsize=13)
-    ax.set_xlabel("x"); ax.set_ylabel("y")
-    ax.set_aspect("equal")
+    # Identify aerofoil surface nodes by exact coordinate match against the DAT file.
+    # Coordinates are rounded to 5 d.p. to survive C++ stream-formatting → CSV round-trip.
+    dat_path  = "results/dat/aerfoil.dat"
+    surf_set: set = set()
+    if os.path.exists(dat_path):
+        with open(dat_path) as _f:
+            for _line in _f:
+                _parts = _line.split()
+                if len(_parts) == 2:
+                    try:
+                        surf_set.add((round(float(_parts[0]), 5),
+                                      round(float(_parts[1]), 5)))
+                    except ValueError:
+                        pass
+
+    surf_mask = np.array(
+        [(round(xi, 5), round(yi, 5)) in surf_set for xi, yi in zip(xs, ys)]
+    )
+
+    xs_s  = xs[surf_mask]
+    ys_s  = ys[surf_mask]
+    cp_s  = cp_vals[surf_mask]
+    xc_s  = xs_s / CHORD
+    upper = ys_s >= 0
+    u_ord = np.argsort(xc_s[upper])
+    l_ord = np.argsort(xc_s[~upper])
+
+    fig, (ax_flow, ax_cp) = plt.subplots(
+        1, 2, figsize=(18, 7),
+        gridspec_kw={'width_ratios': [1.35, 1]},
+    )
+    fig.patch.set_facecolor(BG)
+
+    # ── Left: Cp field ────────────────────────────────────────────────────────
+    ax_flow.set_facecolor(BG)
+    if tris:
+        tcf = ax_flow.tricontourf(xs, ys, tris, cp_vals, levels=50, cmap="RdBu_r")
+    else:
+        tcf = ax_flow.tricontourf(xs, ys, cp_vals, levels=50, cmap="RdBu_r")
+
+    cbar = fig.colorbar(tcf, ax=ax_flow, pad=0.02)
+    cbar.set_label("Cₚ", color=C_TEXT)
+    cbar.ax.tick_params(labelcolor=C_TEXT, color=C_TEXT)
+    cbar.outline.set_edgecolor(C_GRID)
+
+    # Aerofoil silhouette built from the actual surface nodes
+    ux = xc_s[upper][u_ord] * CHORD
+    uy = ys_s[upper][u_ord]
+    lx = xc_s[~upper][l_ord] * CHORD
+    ly = ys_s[~upper][l_ord]
+    ax_flow.fill(np.concatenate([ux[::-1], lx]),
+                 np.concatenate([uy[::-1], ly]),
+                 facecolor=BG, edgecolor=C_AF, lw=1.2, zorder=4)
+
+    dot_flow = ax_flow.plot([], [], 'o', color='white', ms=7, zorder=11,
+                             markeredgecolor=C_AF, markeredgewidth=1.0)[0]
+    ax_flow.set_aspect('equal')
+    ax_flow.set_title("Potential Flow — Pressure Coefficient", color='white', fontsize=12)
+    ax_flow.set_xlabel("x", color=C_TEXT)
+    ax_flow.set_ylabel("y", color=C_TEXT)
+    for sp in ax_flow.spines.values():
+        sp.set_edgecolor(C_GRID)
+    ax_flow.tick_params(colors=C_TEXT)
+
+    # ── Right: Cp distribution ────────────────────────────────────────────────
+    ax_cp.set_facecolor(BG)
+    ax_cp.plot(xc_s[upper][u_ord],  cp_s[upper][u_ord],
+               color=C_UPPER, lw=1.5, label='Upper surface', zorder=3)
+    ax_cp.plot(xc_s[~upper][l_ord], cp_s[~upper][l_ord],
+               color=C_LOWER, lw=1.5, label='Lower surface', zorder=3)
+    ax_cp.scatter(xc_s[upper],  cp_s[upper],  s=22, color=C_UPPER, zorder=5)
+    ax_cp.scatter(xc_s[~upper], cp_s[~upper], s=22, color=C_LOWER, zorder=5)
+    ax_cp.axhline(0, color=C_GRID, lw=0.8, ls='--', zorder=2)
+    ax_cp.invert_yaxis()
+    ax_cp.set_xlim(-0.02, 1.02)
+    ax_cp.set_xlabel("x/c", color=C_TEXT, fontsize=11)
+    ax_cp.set_ylabel("Cₚ", color=C_TEXT, fontsize=11)
+    ax_cp.set_title("Cp Distribution — Aerofoil Surface", color='white', fontsize=12)
+    for sp in ax_cp.spines.values():
+        sp.set_edgecolor(C_GRID)
+    ax_cp.tick_params(colors=C_TEXT)
+    ax_cp.grid(True, color=C_GRID, lw=0.5, alpha=0.5)
+    leg = ax_cp.legend(facecolor='#21262d', edgecolor=C_GRID, fontsize=10)
+    for t in leg.get_texts():
+        t.set_color('white')
+
+    # ── Hover crosshair ───────────────────────────────────────────────────────
+    vline    = ax_cp.axvline(x=0, color='white', lw=0.8, alpha=0.7, zorder=10, visible=False)
+    dot_cp_h = ax_cp.plot([], [], 'o', color='white', ms=7, zorder=11,
+                           markeredgecolor=C_AF, markeredgewidth=1.0)[0]
+
+    def _hover(event):
+        if event.inaxes is ax_flow and event.xdata is not None:
+            idx = int(np.argmin(np.hypot(xs_s - event.xdata, ys_s - event.ydata)))
+        elif event.inaxes is ax_cp and event.xdata is not None:
+            idx = int(np.argmin(np.abs(xc_s - event.xdata)))
+        else:
+            vline.set_visible(False)
+            dot_cp_h.set_data([], [])
+            dot_flow.set_data([], [])
+            fig.canvas.draw_idle()
+            return
+        vline.set_visible(True)
+        vline.set_xdata([xc_s[idx], xc_s[idx]])
+        dot_cp_h.set_data([xc_s[idx]], [cp_s[idx]])
+        dot_flow.set_data([xs_s[idx]], [ys_s[idx]])
+        fig.canvas.draw_idle()
+
+    fig.canvas.mpl_connect('motion_notify_event', _hover)
+
     plt.tight_layout()
     out = "results/png/pressurefield.png"
     plt.savefig(out, dpi=150)
