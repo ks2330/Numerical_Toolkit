@@ -45,8 +45,10 @@ add_library(numerical_toolkit
 
     src/nt/setup/finite_element_methods/FEM_Global_Stiffness_Matrix.cpp   
 
-    src/mesh_generation/mesh_generation.cpp
-    src/mesh_generation/mesh_triangulation_algorithm.cpp
+    src/mesh_generation/mesh_init.cpp
+    src/mesh_generation/mesh_sampling.cpp
+    src/mesh_generation/mesh_triangulation.cpp
+    src/mesh_generation/mesh_metrics.cpp
     src/mesh_generation/shape_generators.cpp
 
     src/app_support/app_forward_euler.cpp
