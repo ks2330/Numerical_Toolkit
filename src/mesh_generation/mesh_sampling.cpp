@@ -1,9 +1,12 @@
 #include "mesh_generation/mesh_generation.h"
+#include "mesh_generation/quadtree.h"
+
 #include <iostream>
 #include <cmath>
 #include <algorithm>
 #include <limits>
 #include <cassert>
+#include <memory>
 
 namespace meshgeneration {
 
@@ -11,6 +14,16 @@ void Mesh::generateRandomNodes() {
     std::vector<Node> boundingBoxNodes = GetBoundingBox(boundaryNodes);
     double minX = boundingBoxNodes[0].x, maxX = boundingBoxNodes[1].x;
     double minY = boundingBoxNodes[0].y, maxY = boundingBoxNodes[3].y;
+
+    // 1. Define the AABB for the entire domain
+    AABB domain_boundary = {
+        (minX + maxX) / 2.0,      // center x
+        (minY + maxY) / 2.0,      // center y
+        (maxX - minX) / 2.0,      // half_width
+        (maxY - minY) / 2.0       // half_height
+    };
+
+    auto node_quadtree = std::make_unique<Quadtree>(domain_boundary);
 
     int k = 30;
     double s_min = std::min((maxX - minX), (maxY - minY)) / std::sqrt(numRandomNodes) * 0.05;
@@ -38,6 +51,7 @@ void Mesh::generateRandomNodes() {
                 internalNodes.push_back(newNode);
                 nodes.push_back(newNode);
                 activeNodes.push_back(newNode);
+                node_quadtree->insert(newNode);
                 found = true;
                 break;
             }
@@ -144,6 +158,18 @@ double Mesh::GetClosestHoleDistance(const Node& node) {
         if (distSq < minDist) minDist = distSq;
     }
     return std::sqrt(minDist);
+}
+
+std::vector<Node> Mesh::NodesWithinDistanceAdvancingFront(const Node& node, double s) {
+    AABB query_box = {node.x, node.y, s, s};
+    std::vector<Node> nearbyNodes = node_quadtree->query(query_box);
+    std::vector<Node> result;
+    for (const auto& n : nearbyNodes) {
+        double dx = n.x - node.x, dy = n.y - node.y;
+        if (dx*dx + dy*dy < s*s) result.push_back(n);
+    }
+    return result;
+
 }
 
 } // namespace meshgeneration

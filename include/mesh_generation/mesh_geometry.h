@@ -7,18 +7,23 @@
 
 namespace meshgeneration {
 
+// Geometry utility functions for mesh generation algorithms
+
+// Compute the signed area of the triangle formed by points a, b, c
 inline double orient2d(const Node& a, const Node& b, const Node& c) {
     return (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x);
 }
 
+// Computes Length of edge between two nodes
 inline double distance(const Node& a, const Node& b) {
     return std::sqrt((b.x-a.x)*(b.x-a.x) + (b.y-a.y)*(b.y-a.y));
 }
 
+// Compute the squared distance between two nodes (avoids sqrt for efficiency)
 inline double distanceSquared(const Node& a, const Node& b) {
     return (b.x-a.x)*(b.x-a.x) + (b.y-a.y)*(b.y-a.y);
 }
-
+// Check if the points in 'nodes' are ordered counter-clockwise
 inline bool isCCW(const std::vector<Node>& nodes) {
     double sum = 0;
     for (int i = 0; i < (int)nodes.size(); ++i) {
@@ -29,6 +34,7 @@ inline bool isCCW(const std::vector<Node>& nodes) {
     return sum < 0;
 }
 
+// edge direction vector from node a to node b
 inline std::pair<double, double> edgeDirection(const Node& a, const Node& b) {
     return {b.x - a.x, b.y - a.y};
 }
@@ -90,6 +96,12 @@ inline double aspectRatio(const Node& a, const Node& b, const Node& c) {
     double longest = std::max({ab, bc, ca});
     double area = 0.5 * std::abs(orient2d(a, b, c));
     return (0.433 * longest * longest) / area;
+}
+
+inline Node RotateVector(Node a, Node b, double angle) {
+    double cosA = std::cos(angle), sinA = std::sin(angle);
+    return {cosA *(b.x - a.x) - sinA * (b.y - a.y) + a.x,
+            sinA *(b.x - a.x) + cosA * (b.y - a.y) + a.y, -1};
 }
 
 } // namespace meshgeneration

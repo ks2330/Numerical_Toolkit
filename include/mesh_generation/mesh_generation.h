@@ -7,6 +7,7 @@
 #include "mesh_generation/mesh_types.h"
 #include "mesh_generation/mesh_geometry.h"
 #include "mesh_generation/shape_generators.h"
+#include "mesh_generation/quadtree.h"
 
 namespace meshgeneration {
 
@@ -55,8 +56,9 @@ public:
     void BoundaryLayerSeeding();
     bool isSdistanceTooClose(const Node& node, double s, double s_boundary);
     double GetClosestHoleDistance(const Node& node);
-
+    std::vector<Node> NodesWithinDistanceAdvancingFront(const Node& node, double s);
     void triangulate();
+    void run_AdvancingFront();
     void ImproveMesh();
     void LaplacianSmoothing(int iterations = 10);
     void enforceConstraint();
@@ -85,8 +87,10 @@ private:
     int numRandomNodes = 0;
     double Area;
 
+    std::unique_ptr<Quadtree> node_quadtree;
     std::vector<Element> bowyerWatson();
     std::vector<Node> initPoisson();
+    void AdvancingFront();
 };
 
 } // namespace meshgeneration

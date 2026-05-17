@@ -5,12 +5,17 @@
 
 namespace meshgeneration {
 
-    void Quadtree::insert(QuadtreeBox* QuadBox, const meshgeneration::Node& point) {
+    void Quadtree::insert(const meshgeneration::Node& point) {
+        insertRecursive(root, point);
+    }
+
+
+    void Quadtree::insertRecursive(QuadtreeBox* QuadBox, const meshgeneration::Node& point) {
         if (!contains(QuadBox, point)) return;
 
         if (QuadBox->children[0] != nullptr){
             for (size_t i = 0; i < 4; ++i) {
-                insert(QuadBox->children[i], point);
+                insertRecursive(QuadBox->children[i], point);
             }
         }
         else {
@@ -20,12 +25,12 @@ namespace meshgeneration {
             else {
                 subdivide(QuadBox);
                 for (size_t i = 0; i < 4; ++i) {
-                    insert(QuadBox->children[i], point);
+                    insertRecursive(QuadBox->children[i], point);
                 }
                 QuadBox->points.clear();
                 QuadBox->points.shrink_to_fit();
 
-                insert(QuadBox, point);
+                insertRecursive(QuadBox, point);
             }
         }
         
@@ -56,4 +61,33 @@ namespace meshgeneration {
         QuadBox->children[2] = new QuadtreeBox({ x - hw, y - hh, hw, hh }); // SW
         QuadBox->children[3] = new QuadtreeBox({ x + hw, y - hh, hw, hh }); // SE
     }
+
+    std::vector<meshgeneration::Node> Quadtree::query(const AABB& range) const {
+        std::vector<meshgeneration::Node> foundPoints;
+        queryRangeRecursive(root, range, foundPoints);
+        return foundPoints;
+    }
+
+    void Quadtree::queryRangeRecursive(const QuadtreeBox* QuadBox, const AABB& range, std::vector<meshgeneration::Node>& foundPoints) const {
+        if (QuadBox == nullptr) return;
+        if (QuadBox->boundary.x + QuadBox->boundary.half_width < range.x - range.half_width ||
+            QuadBox->boundary.x - QuadBox->boundary.half_width > range.x + range.half_width ||
+            QuadBox->boundary.y + QuadBox->boundary.half_height < range.y - range.half_height ||
+            QuadBox->boundary.y - QuadBox->boundary.half_height > range.y + range.half_height) {
+            return;
+        }
+        if (QuadBox->children[0] != nullptr){
+            for (size_t i = 0; i < 4; ++i) {
+                queryRangeRecursive(QuadBox->children[i], range, foundPoints);
+            }
+        }
+        else {
+            for (const auto& point : QuadBox->points) {
+                if (contains(QuadBox, point)) {
+                    foundPoints.push_back(point);
+                }
+            }
+        }
+    }
+
 }

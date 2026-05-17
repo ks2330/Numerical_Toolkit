@@ -22,6 +22,9 @@ namespace app_support::FEM::run
         return mesh;
     }
 
+    void run_Advancing_Front() {
+        std::cout << "Advancing Front method is not yet implemented.\n";
+    }
 
     void run_Triangulation(meshgeneration::Mesh& mesh) {
         mesh.triangulate();   
