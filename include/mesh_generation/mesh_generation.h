@@ -1,8 +1,9 @@
-#pragma once
+﻿#pragma once
 #include <string>
 #include <vector>
 #include <map>
 #include <tuple>
+#include <memory>
 
 #include "mesh_generation/mesh_types.h"
 #include "mesh_generation/mesh_geometry.h"
@@ -57,7 +58,7 @@ public:
     bool isSdistanceTooClose(const Node& node, double s, double s_boundary);
     double GetClosestHoleDistance(const Node& node);
     std::vector<Node> NodesWithinDistanceAdvancingFront(const Node& node, double s);
-    void triangulate();
+    void triangulate(std::string method = "delaunay");
     void run_AdvancingFront();
     void ImproveMesh();
     void LaplacianSmoothing(int iterations = 10);

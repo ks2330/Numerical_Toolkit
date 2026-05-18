@@ -7,19 +7,29 @@
 
 namespace meshgeneration {
 
-void Mesh::triangulate() {
-    if (nodes.empty()) return;
-    elements = bowyerWatson();
-    enforceConstraint();
-    deleteHoles();
-    enforceOutsideConstraints();
-    MetricAngles("results/metrics/angle_distribution.csv");
-    MetricAspectRatios("results/metrics/aspect_ratio_distribution.csv");
-    ImproveMesh();
-    buildNeighbours();
-    LaplacianSmoothing();
-    MetricAngles("results/metrics/angle_distribution_improved.csv");
-    MetricAspectRatios("results/metrics/aspect_ratio_distribution_improved.csv");
+void Mesh::triangulate(std::string method) {
+    if (method == "advancing_front") {
+        if (nodes.empty()) return;
+        AdvancingFront();
+        deleteHoles();
+        enforceOutsideConstraints();
+        buildNeighbours();
+        LaplacianSmoothing();
+        std::cout << "Size of Elements" << elements.size() << "\n";
+    } else {
+        if (nodes.empty()) return;
+        elements = bowyerWatson();
+        enforceConstraint();
+        deleteHoles();
+        enforceOutsideConstraints();
+        MetricAngles("results/metrics/angle_distribution.csv");
+        MetricAspectRatios("results/metrics/aspect_ratio_distribution.csv");
+        ImproveMesh();
+        buildNeighbours();
+        LaplacianSmoothing();
+        MetricAngles("results/metrics/angle_distribution_improved.csv");
+        MetricAspectRatios("results/metrics/aspect_ratio_distribution_improved.csv");
+    }
 }
 
 void Mesh::ImproveMesh() {

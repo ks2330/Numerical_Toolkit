@@ -5,7 +5,7 @@
 namespace app_support::FEM::run
 {
     meshgeneration::Mesh run_FEM();
-    void run_Triangulation(meshgeneration::Mesh& mesh);
+    void run_Triangulation(meshgeneration::Mesh& mesh, std::string method);
     void run_Advancing_Front();
     std::vector<double> run_FEM_Heat_Equation(meshgeneration::Mesh& mesh,
                                                int inletGroup, double T_inlet,

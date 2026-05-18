@@ -1,4 +1,3 @@
-#pragma once
 #include <vector>
 #include "mesh_generation/mesh_types.h"
 #include "mesh_generation/quadtree.h"
@@ -15,6 +14,7 @@ namespace meshgeneration {
 
         if (QuadBox->children[0] != nullptr){
             for (size_t i = 0; i < 4; ++i) {
+                if (!contains(QuadBox, point)) return;
                 insertRecursive(QuadBox->children[i], point);
             }
         }
@@ -25,7 +25,7 @@ namespace meshgeneration {
             else {
                 subdivide(QuadBox);
                 for (size_t i = 0; i < 4; ++i) {
-                    insertRecursive(QuadBox->children[i], point);
+                    insertRecursive(QuadBox, QuadBox->points[i]);
                 }
                 QuadBox->points.clear();
                 QuadBox->points.shrink_to_fit();
@@ -47,6 +47,16 @@ namespace meshgeneration {
             return false;
     }
 
+    bool Quadtree::withinRange(const AABB& range, const meshgeneration::Node& point) const {
+        if (point.x >= range.x - range.half_width &&
+            point.x <= range.x + range.half_width &&
+            point.y >= range.y - range.half_height &&
+            point.y <= range.y + range.half_height) {
+            return true;
+        }
+        else
+            return false;
+    }
     void Quadtree::subdivide(QuadtreeBox* QuadBox) {
         if (QuadBox->children[0] != nullptr) {
             return;
@@ -83,7 +93,7 @@ namespace meshgeneration {
         }
         else {
             for (const auto& point : QuadBox->points) {
-                if (contains(QuadBox, point)) {
+                if (withinRange(range, point)) {
                     foundPoints.push_back(point);
                 }
             }

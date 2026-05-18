@@ -43,7 +43,7 @@ Config config = {
 int main() {
     //meshgeneration::Mesh mesh = app_support::FEM::run::run_FEM(shape, nx, ny, segsPerUnit, numRandomNodes);
     meshgeneration::Mesh mesh = app_support::FEM::run::initialise_from_CSV(config.aerfoilDAT);
-    app_support::FEM::run::run_Triangulation(mesh);
+    app_support::FEM::run::run_Triangulation(mesh, "advancing_front");
     app_support::FEM::UI::write_boundry_nodes_to_csv(mesh, mesh.nodes, config.boundaryCSV);
     app_support::FEM::UI::write_triangulation_to_csv(mesh, mesh.elements, mesh.nodes, config.triangulationCSV);
 

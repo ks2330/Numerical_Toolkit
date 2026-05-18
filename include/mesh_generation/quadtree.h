@@ -44,6 +44,7 @@ namespace meshgeneration {
             void subdivide(QuadtreeBox* QuadBox);
             void insertRecursive(QuadtreeBox* QuadBox, const meshgeneration::Node& point);
             void queryRangeRecursive(const QuadtreeBox* QuadBox, const AABB& range, std::vector<meshgeneration::Node>& foundPoints) const;
+            bool withinRange(const AABB& range, const meshgeneration::Node& point) const;
         public:
 
         Quadtree(const AABB& boundary) {

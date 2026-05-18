@@ -50,6 +50,8 @@ add_library(numerical_toolkit
     src/mesh_generation/mesh_triangulation.cpp
     src/mesh_generation/mesh_metrics.cpp
     src/mesh_generation/shape_generators.cpp
+    src/mesh_generation/quadtree.cpp
+    src/mesh_generation/mesh_Advancing_Front.cpp
 
     src/app_support/app_forward_euler.cpp
     src/app_support/app_FEM.cpp

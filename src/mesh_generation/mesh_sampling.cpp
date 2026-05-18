@@ -23,7 +23,7 @@ void Mesh::generateRandomNodes() {
         (maxY - minY) / 2.0       // half_height
     };
 
-    auto node_quadtree = std::make_unique<Quadtree>(domain_boundary);
+    node_quadtree = std::make_unique<Quadtree>(domain_boundary);
 
     int k = 30;
     double s_min = std::min((maxX - minX), (maxY - minY)) / std::sqrt(numRandomNodes) * 0.05;

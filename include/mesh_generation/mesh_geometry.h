@@ -104,4 +104,9 @@ inline Node RotateVector(Node a, Node b, double angle) {
             sinA *(b.x - a.x) + cosA * (b.y - a.y) + a.y, -1};
 }
 
+inline bool edgesMatch(const Edge& a, const Edge& b) {
+    return (a.n0_id == b.n0_id && a.n1_id == b.n1_id) ||
+           (a.n0_id == b.n1_id && a.n1_id == b.n0_id);
+}
+
 } // namespace meshgeneration
