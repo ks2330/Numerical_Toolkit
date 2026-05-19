@@ -38,7 +38,7 @@ void Mesh::AdvancingFront() {
         }
     }
 
-    int maxIterations = 100000;
+    int maxIterations = 2000;
     int iter = 0;
     while (!activeFront.empty() && iter++ < maxIterations) {
         Edge edge = activeFront.front();
@@ -91,16 +91,16 @@ void Mesh::AdvancingFront() {
         }
         Edge newEdge1 = {edge.n0_id, p_Ideal.Node_id, -1};
         auto it1 = std::find_if(activeFront.begin(), activeFront.end(),
-            [&](const Edge& e) { return edgesMatch(e, newEdge1); });
+            [&](const Edge& e) { return e == newEdge1; });
 
         if (it1 != activeFront.end())
             activeFront.erase(it1);
         else
             activeFront.push_back(newEdge1);
-        
+
         Edge newEdge2 = {p_Ideal.Node_id, edge.n1_id, -1};
         auto it2 = std::find_if(activeFront.begin(), activeFront.end(),
-            [&](const Edge& e) { return edgesMatch(e, newEdge2); });
+            [&](const Edge& e) { return e == newEdge2; });
 
         if (it2 != activeFront.end())
             activeFront.erase(it2);
@@ -108,8 +108,10 @@ void Mesh::AdvancingFront() {
             activeFront.push_back(newEdge2);
 
         elements.push_back({edge.n0_id, edge.n1_id, p_Ideal.Node_id, element_id_counter++});
-        if (iter % 100 == 0)
+        if (iter % 50 == 0)
         std::cout << "iter " << iter << " front size: " << activeFront.size() << "\n";
 
     }
+    std::cout << "Loop exited. iter=" << iter << " front remaining=" << activeFront.size() << "\n";
+    std::cout << "Size of Elements" << elements.size() << "\n";
 }

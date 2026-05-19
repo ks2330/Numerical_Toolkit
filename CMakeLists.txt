@@ -48,6 +48,8 @@ add_library(numerical_toolkit
     src/mesh_generation/mesh_init.cpp
     src/mesh_generation/mesh_sampling.cpp
     src/mesh_generation/mesh_triangulation.cpp
+    src/mesh_generation/mesh_Bowyer_Watson.cpp
+    src/mesh_generation/mesh_cleanup.cpp
     src/mesh_generation/mesh_metrics.cpp
     src/mesh_generation/shape_generators.cpp
     src/mesh_generation/quadtree.cpp
@@ -70,6 +72,9 @@ target_include_directories(numerical_toolkit PUBLIC
 
 target_link_libraries(numerical_toolkit PUBLIC Eigen3::Eigen)
 
+if(MSVC)
+    target_compile_definitions(numerical_toolkit PRIVATE _USE_MATH_DEFINES)
+endif()
 
 # Enable testing and fetch Google Test
 

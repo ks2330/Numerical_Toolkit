@@ -50,12 +50,9 @@ inline bool isInCircle(const Node& A, const Node& B, const Node& C, const Node& 
 }
 
 inline bool isSameEdge(const Element& t, const Edge& e) {
-    auto match = [](int a, int b, const Edge& edge) {
-        return (a == edge.n0_id && b == edge.n1_id) || (a == edge.n1_id && b == edge.n0_id);
-    };
-    return match(t.n0_id, t.n1_id, e) ||
-           match(t.n1_id, t.n2_id, e) ||
-           match(t.n2_id, t.n0_id, e);
+    return Edge{t.n0_id, t.n1_id, -1} == e ||
+           Edge{t.n1_id, t.n2_id, -1} == e ||
+           Edge{t.n2_id, t.n0_id, -1} == e;
 }
 
 inline bool isPointInPolygon(const Node& point, const std::vector<Node>& boundary) {
@@ -104,9 +101,5 @@ inline Node RotateVector(Node a, Node b, double angle) {
             sinA *(b.x - a.x) + cosA * (b.y - a.y) + a.y, -1};
 }
 
-inline bool edgesMatch(const Edge& a, const Edge& b) {
-    return (a.n0_id == b.n0_id && a.n1_id == b.n1_id) ||
-           (a.n0_id == b.n1_id && a.n1_id == b.n0_id);
-}
 
 } // namespace meshgeneration

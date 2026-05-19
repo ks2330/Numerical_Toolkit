@@ -39,19 +39,14 @@ void Mesh::MetricAspectRatios(std::string outputFile) {
 }
 
 Node Mesh::computeCentroid(const Element& e) {
-    const Node& n1 = nodes[e.n0_id];
-    const Node& n2 = nodes[e.n1_id];
-    const Node& n3 = nodes[e.n2_id];
-    return {(n1.x+n2.x+n3.x)/3.0, (n1.y+n2.y+n3.y)/3.0, -1};
+    return (nodes[e.n0_id] + nodes[e.n1_id] + nodes[e.n2_id]) * (1.0/3.0);
 }
 
 std::tuple<Node,Node,Node> Mesh::computeEdgeMidpoint(const Element& e) {
     const Node& n1 = nodes[e.n0_id];
     const Node& n2 = nodes[e.n1_id];
     const Node& n3 = nodes[e.n2_id];
-    return { {(n1.x+n2.x)/2.0, (n1.y+n2.y)/2.0, -1},
-             {(n2.x+n3.x)/2.0, (n2.y+n3.y)/2.0, -1},
-             {(n3.x+n1.x)/2.0, (n3.y+n1.y)/2.0, -1} };
+    return { (n1+n2)*0.5, (n2+n3)*0.5, (n3+n1)*0.5 };
 }
 
 } // namespace meshgeneration

@@ -100,7 +100,8 @@ void Mesh::CreateOuterBoundary() {
         int segs = std::max(1, static_cast<int>(len / 50.0));
         for (int s = 1; s < segs; ++s) {
             double t = static_cast<double>(s) / segs;
-            withInterp.push_back({a.x + t*(b.x-a.x), a.y + t*(b.y-a.y), -1, NodeType::Boundary, 0});
+            Node interp = a + (b - a) * t;
+            withInterp.push_back({interp.x, interp.y, -1, NodeType::Boundary, 0});
         }
     }
     boundaryNodes = withInterp;
@@ -131,7 +132,8 @@ void Mesh::CreateAerofoilBoundary() {
         int segs = std::max(1, static_cast<int>(5 * len / segLen));
         for (int s = 0; s < segs; ++s) {
             double t = static_cast<double>(s) / segs;
-            result.push_back({a.x + t*(b.x-a.x), a.y + t*(b.y-a.y), -1, NodeType::Boundary, group_id});
+            Node interp = a + (b - a) * t;
+            result.push_back({interp.x, interp.y, -1, NodeType::Boundary, group_id});
         }
         return result;
     };
