@@ -7,7 +7,7 @@
 
 namespace meshgeneration {
 
-void Mesh::ImproveMesh() {
+void Mesh::improveMesh() {
     std::cout << "Improving mesh quality...\n";
     bool foundBadElement = true;
     int iteration = 0;
@@ -31,7 +31,7 @@ void Mesh::ImproveMesh() {
     enforceOutsideConstraints();
 }
 
-void Mesh::LaplacianSmoothing(int iterations) {
+void Mesh::laplacianSmoothing(int iterations) {
     if (nodes.empty()) return;
     std::cout << "Laplacian smoothing...\n";
     for (int i = 0; i < iterations; ++i) {

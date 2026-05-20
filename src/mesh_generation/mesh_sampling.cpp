@@ -2,6 +2,7 @@
 #include "mesh_generation/quadtree.h"
 
 #include <iostream>
+#include <stdexcept>
 #include <cmath>
 #include <algorithm>
 #include <limits>
@@ -32,7 +33,7 @@ void Mesh::generateRandomNodes() {
     while (!activeNodes.empty() && internalNodes.size() < static_cast<size_t>(numRandomNodes)) {
         int idx = rand() % activeNodes.size();
         Node activeNode = activeNodes[idx];
-        double d = GetClosestHoleDistance(activeNode);
+        double d = getClosestHoleDistance(activeNode);
         double growth_rate = 10.0;
         double s_max = s_min * 5.0;
         double s_varied = std::clamp(s_min + growth_rate * d, s_min, s_max);
@@ -93,11 +94,11 @@ std::vector<Node> Mesh::initPoisson() {
         }
     }
     if (!placed)
-        std::cerr << "Failed to place initial Poisson node after 10000 attempts.\n";
+        throw std::runtime_error("Failed to place initial Poisson seed node — check boundary geometry");
     return activeNodes;
 }
 
-void Mesh::BoundaryLayerSeeding() {
+void Mesh::boundaryLayerSeeding() {
     if (boundaryEdges.empty()) return;
     if (holeNodes.empty()) return;
 
@@ -150,7 +151,7 @@ bool Mesh::isSdistanceTooClose(const Node& node, double s, double s_boundary) {
     return false;
 }
 
-double Mesh::GetClosestHoleDistance(const Node& node) {
+double Mesh::getClosestHoleDistance(const Node& node) {
     double minDist = std::numeric_limits<double>::max();
     for (const auto& n : holeNodes) {
         double dx = n.x - node.x, dy = n.y - node.y;
@@ -160,7 +161,7 @@ double Mesh::GetClosestHoleDistance(const Node& node) {
     return std::sqrt(minDist);
 }
 
-std::vector<Node> Mesh::NodesWithinDistanceAdvancingFront(const Node& node, double s) {
+std::vector<Node> Mesh::nodesWithinDistanceAdvancingFront(const Node& node, double s) {
     AABB query_box = {node.x, node.y, s, s};
     std::vector<Node> nearbyNodes = node_quadtree->query(query_box);
     std::vector<Node> result;

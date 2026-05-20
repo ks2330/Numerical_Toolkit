@@ -91,7 +91,7 @@ def plot_mesh_quality_comparison():
     ax1.bar(x + w / 2, counts_a, width=w, label="After improvement",
             color="darkorange", alpha=0.85)
     ax1.set_xticks(x)
-    ax1.set_xticklabels([f"{v}°" for v in labels_b], rotation=45, ha="right")
+    ax1.set_xticklabels([f"{v * 10}°" for v in labels_b], rotation=45, ha="right")
     ax1.set_title("Minimum Angle Distribution", fontsize=13)
     ax1.set_xlabel("Angle bin (min per element)", fontsize=11)
     ax1.set_ylabel("Element count", fontsize=11)
@@ -108,7 +108,7 @@ def plot_mesh_quality_comparison():
     ax2.bar(x + w / 2, counts_a, width=w, label="After improvement",
             color="darkorange", alpha=0.85)
     ax2.set_xticks(x)
-    ax2.set_xticklabels([f"{v}–{v + 10}" for v in labels_b], rotation=45, ha="right")
+    ax2.set_xticklabels([f"{v * 10}–{v * 10 + 10}" for v in labels_b], rotation=45, ha="right")
     ax2.set_title("Aspect Ratio Distribution", fontsize=13)
     ax2.set_xlabel("Aspect ratio bin", fontsize=11)
     ax2.set_ylabel("Element count", fontsize=11)

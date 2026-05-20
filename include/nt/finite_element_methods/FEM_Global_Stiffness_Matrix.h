@@ -1,6 +1,7 @@
 #pragma once
 #include <vector>
 #include <iostream>
+#include <stdexcept>
 #include <cmath>
 #include <algorithm>
 #include <tuple>
@@ -9,13 +10,15 @@
 
 namespace nt::fem
 {
-
-    struct Matrix3x3 {
-        double data[3][3];
+    template <typename T, int Rows, int Cols>
+    struct Matrix {
+        T data[Rows][Cols];
+        const T& operator()(int i, int j) const { return data[i][j]; }
     };
-   
 
-    inline Matrix3x3 computeElementStiffnessMatrix(const meshgeneration::Mesh& mesh, const meshgeneration::Element& element) {
+    using Matrix3x3 = Matrix<double, 3, 3>;
+
+    inline Matrix<double, 3, 3> computeElementStiffnessMatrix(const meshgeneration::Mesh& mesh, const meshgeneration::Element& element) {
         meshgeneration::Node n1 = mesh.getNodeByID(element.n0_id);
         meshgeneration::Node n2 = mesh.getNodeByID(element.n1_id);
         meshgeneration::Node n3 = mesh.getNodeByID(element.n2_id);
@@ -24,11 +27,9 @@ namespace nt::fem
 
         double area = 0.5 * std::abs(n1.x * (n2.y - n3.y) + n2.x * (n3.y - n1.y) + n3.x * (n1.y - n2.y));
         
-        if (area < 1e-14) {
-            std::cerr << "Degenerate element " << element.Element_id
-                    << " (area ≈ 0), skipping\n";
-            return stiffnessMatrix;  // returns zero matrix, safe to assemble
-        }
+        if (area < 1e-14)
+            throw std::runtime_error("FEM assembly: degenerate element " +
+                std::to_string(element.Element_id) + " (area \xe2\x89\x88 0) — run validateMesh() before assembly");
 
         double b[3] = { n2.y - n3.y, n3.y - n1.y, n1.y - n2.y };
         double c[3] = { n3.x - n2.x, n1.x - n3.x, n2.x - n1.x };

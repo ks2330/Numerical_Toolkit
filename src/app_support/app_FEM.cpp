@@ -26,10 +26,6 @@ namespace app_support::FEM::run
         std::cout << "Advancing Front method is not yet implemented.\n";
     }
 
-    void run_Triangulation(meshgeneration::Mesh& mesh, std::string method) {
-        mesh.triangulate(method);   
-    }
-
     std::vector<double> run_FEM_Heat_Equation(meshgeneration::Mesh& mesh,
                                                int inletGroup, double T_inlet,
                                                int outletGroup, double T_outlet) {

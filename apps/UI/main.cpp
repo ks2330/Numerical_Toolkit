@@ -7,6 +7,8 @@
 #include "app_support/app_FEM.h"
 #include "app_support/app_FEM_UI.h"
 #include "nt/finite_element_methods/FEM_Potential_Flow.h"
+#include "mesh_generation/algorithm_delaunay_triangulation.h"
+#include "mesh_generation/algorithm_advancing_front_triangulation.h"
 
 // using json = nlohmann::json;
 
@@ -41,21 +43,27 @@ Config config = {
 };
 
 int main() {
-    //meshgeneration::Mesh mesh = app_support::FEM::run::run_FEM(shape, nx, ny, segsPerUnit, numRandomNodes);
-    meshgeneration::Mesh mesh = app_support::FEM::run::initialise_from_CSV(config.aerfoilDAT);
-    app_support::FEM::run::run_Triangulation(mesh, "advancing_front");
-    app_support::FEM::UI::write_boundry_nodes_to_csv(mesh, mesh.nodes, config.boundaryCSV);
-    app_support::FEM::UI::write_triangulation_to_csv(mesh, mesh.elements, mesh.nodes, config.triangulationCSV);
+    try {
+        //meshgeneration::Mesh mesh = app_support::FEM::run::run_FEM(shape, nx, ny, segsPerUnit, numRandomNodes);
+        meshgeneration::Mesh mesh = app_support::FEM::run::initialise_from_CSV(config.aerfoilDAT);
+        meshgeneration::DelaunayTriangulation algo;
+        mesh.triangulate(algo);
+        app_support::FEM::UI::write_boundry_nodes_to_csv(mesh, mesh.nodes, config.boundaryCSV);
+        app_support::FEM::UI::write_triangulation_to_csv(mesh, mesh.elements, mesh.nodes, config.triangulationCSV);
 
-//  std::vector<double> T = app_support::FEM::run::run_FEM_Heat_Equation(
-//  mesh, mesh.groupId("inlet"), 100.0, mesh.groupId("outlet"), 0.0);
-//  app_support::FEM::UI::write_Solution_to_csv(T, config.solutionCSV, mesh.nodes.size(), mesh);
+    //  std::vector<double> T = app_support::FEM::run::run_FEM_Heat_Equation(
+    //  mesh, mesh.groupId("inlet"), 100.0, mesh.groupId("outlet"), 0.0);
+    //  app_support::FEM::UI::write_Solution_to_csv(T, config.solutionCSV, mesh.nodes.size(), mesh);
 
-    const double U_inf = 1.0;
-    std::vector<double> phi = app_support::FEM::run::run_Potential_Flow(mesh, U_inf, 0.0);
-    auto velocity = nt::fem::computeVelocityField(mesh, phi);
-    auto Cp       = nt::fem::computePressureCoefficients(velocity, U_inf);
-    app_support::FEM::UI::write_pressure_field_to_csv(Cp, mesh, config.pressureFieldCSV);
+        const double U_inf = 1.0;
+        std::vector<double> phi = app_support::FEM::run::run_Potential_Flow(mesh, U_inf, 0.0);
+        auto velocity = nt::fem::computeVelocityField(mesh, phi);
+        auto Cp       = nt::fem::computePressureCoefficients(velocity, U_inf);
+        app_support::FEM::UI::write_pressure_field_to_csv(Cp, mesh, config.pressureFieldCSV);
+    } catch (const std::runtime_error& e) {
+        std::cerr << "Fatal error: " << e.what() << "\n";
+        return 1;
+    }
 
     return 0;
 }

@@ -6,36 +6,21 @@
 
 namespace meshgeneration {
 
-void Mesh::MetricAngles(std::string outputFile) {
-    std::vector<int> bins(18, 0);
-    for (const auto& e : elements) {
-        double a = minAngle(nodes[e.n0_id], nodes[e.n1_id], nodes[e.n2_id]);
-        bins[std::min(static_cast<int>(a * 180.0 / M_PI) / 10, 17)]++;
-    }
-    std::ofstream f(outputFile);
-    if (!f.is_open()) {
-        std::cerr << "Could not write to " << outputFile << "\n";
-        return;
-    }
-    f << "Angle (degrees),Count\n";
-    for (size_t i = 0; i < bins.size(); ++i) f << i * 10 << "," << bins[i] << "\n";
-    std::cout << "Angle distribution written to " << outputFile << "\n";
+
+void Mesh::metricAngles(const std::string& outputFile) {
+    writeMetric(18, outputFile,
+        [](const Node& n0, const Node& n1, const Node& n2) {
+            return minAngle(n0, n1, n2);
+        },
+        [](double a) { return std::min(static_cast<int>(a * 180.0 / M_PI) / 10, 17); });
 }
 
-void Mesh::MetricAspectRatios(std::string outputFile) {
-    std::vector<int> bins(10, 0);
-    for (const auto& e : elements) {
-        double r = aspectRatio(nodes[e.n0_id], nodes[e.n1_id], nodes[e.n2_id]);
-        bins[std::min(static_cast<int>(r / 10), 9)]++;
-    }
-    std::ofstream f(outputFile);
-    if (!f.is_open()) {
-        std::cerr << "Could not write to " << outputFile << "\n";
-        return;
-    }
-    f << "Aspect Ratio,Count\n";
-    for (size_t i = 0; i < bins.size(); ++i) f << i * 10 << "," << bins[i] << "\n";
-    std::cout << "Aspect ratio distribution written to " << outputFile << "\n";
+void Mesh::metricAspectRatios(const std::string& outputFile) {
+    writeMetric(10, outputFile,
+        [](const Node& n0, const Node& n1, const Node& n2) {
+            return aspectRatio(n0, n1, n2);
+        },
+        [](double ar) { return std::min(static_cast<int>(ar / 10), 9); });
 }
 
 Node Mesh::computeCentroid(const Element& e) {

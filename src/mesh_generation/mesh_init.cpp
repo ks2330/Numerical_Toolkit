@@ -4,55 +4,49 @@
 #include <sstream>
 #include <filesystem>
 #include <algorithm>
+#include <stdexcept>
 
 namespace meshgeneration {
 
-void Mesh::init(std::string filename) {
+void Mesh::init(const std::string& filename) {
     nodes.clear(); edges.clear(); boundaryEdges.clear(); elements.clear();
     boundaryNodes.clear(); holeNodes.clear(); internalNodes.clear();
     boundaryGroups.clear();
 
     std::string ext = std::filesystem::path(filename).extension().string();
     if (ext == ".csv") {
-        ParseBoundaryCSV(filename);
-        if (nodes.empty()) {
-            std::cerr << "No nodes loaded from " << filename << "\n";
-            return;
-        }
+        parseBoundaryCSV(filename);
+        if (nodes.empty())
+            throw std::runtime_error("No nodes loaded from " + filename);
         registerGroup(0, "outer");
-        CreateOuterBoundary();
+        createOuterBoundary();
         buildFlatNodeList();
         buildEdges(boundaryNodes, 0);
         boundaryEdges = edges;
     } else if (ext == ".dat") {
-        ParseAerofoilDAT(filename);
-        if (holeNodes.empty()) {
-            std::cerr << "No nodes loaded from " << filename << "\n";
-            return;
-        }
+        parseAerofoilDAT(filename);
+        if (holeNodes.empty())
+            throw std::runtime_error("No nodes loaded from " + filename);
         registerGroup(0, "outer");
         registerGroup(1, "aerofoil");
         registerGroup(2, "inlet");
         registerGroup(3, "outlet");
-        CreateAerofoilBoundary();
+        createAerofoilBoundary();
         buildFlatNodeList();
         buildEdges(boundaryNodes, 0);
         buildEdges(holeNodes, 1);
         boundaryEdges = edges;
     } else {
-        std::cerr << "Unsupported file format: " << ext << "\n";
-        return;
+        throw std::runtime_error("Unsupported file format: " + ext);
     }
-    BoundaryLayerSeeding();
-    GetInteriorNodeNumber();
+    boundaryLayerSeeding();
+    getInteriorNodeNumber();
 }
 
-void Mesh::ParseBoundaryCSV(std::string filename) {
+void Mesh::parseBoundaryCSV(const std::string& filename) {
     std::ifstream file(filename);
-    if (!file.is_open()) {
-        std::cerr << "Failed to open file: " << filename << "\n";
-        return;
-    }
+    if (!file.is_open())
+        throw std::runtime_error("Failed to open file: " + filename);
     std::string line;
     bool first_line = true;
     while (std::getline(file, line)) {
@@ -64,18 +58,16 @@ void Mesh::ParseBoundaryCSV(std::string filename) {
                 double y = std::stod(line.substr(comma + 1));
                 nodes.push_back({x, y, static_cast<int>(nodes.size()), NodeType::Boundary, 0});
             } catch (const std::exception& e) {
-                std::cerr << "Error parsing line: " << line << " (" << e.what() << ")\n";
+                throw std::runtime_error("Error parsing line: " + line + " (" + e.what() + ")");
             }
         }
     }
 }
 
-void Mesh::ParseAerofoilDAT(std::string filename) {
+void Mesh::parseAerofoilDAT(const std::string& filename) {
     std::ifstream file(filename);
-    if (!file.is_open()) {
-        std::cerr << "Failed to open file: " << filename << "\n";
-        return;
-    }
+    if (!file.is_open())
+        throw std::runtime_error("Failed to open file: " + filename);
     std::string line;
     while (std::getline(file, line)) {
         std::istringstream iss(line);
@@ -83,13 +75,14 @@ void Mesh::ParseAerofoilDAT(std::string filename) {
         if (iss >> x >> y) {
             holeNodes.push_back({x, y, static_cast<int>(holeNodes.size()), NodeType::Hole, 1});
         } else {
-            std::cerr << "Warning: Could not parse line: " << line << "\n";
+            std::cerr << "Warning: skipping line: " << line << "\n";
         }
     }
 }
 
-void Mesh::CreateOuterBoundary() {
-    if (nodes.empty()) return;
+void Mesh::createOuterBoundary() {
+    if (nodes.empty())
+        throw std::runtime_error("No boundary nodes to create outer boundary.");
     std::vector<Node> withInterp;
     size_t n = nodes.size();
     for (size_t i = 0; i < n; ++i) {
@@ -108,8 +101,10 @@ void Mesh::CreateOuterBoundary() {
     nodes.clear();
 }
 
-void Mesh::CreateAerofoilBoundary() {
-    if (holeNodes.empty()) return;
+void Mesh::createAerofoilBoundary() {
+    if (holeNodes.empty()) {
+        throw std::runtime_error("No hole nodes to create aerofoil boundary.");
+    }
     std::vector<Node> bbox = GetBoundingBox(holeNodes);
 
     chord = bbox[1].x - bbox[0].x;
@@ -197,7 +192,7 @@ void Mesh::buildNeighbours() {
     }
 }
 
-void Mesh::GetInteriorNodeNumber() {
+void Mesh::getInteriorNodeNumber() {
     numRandomNodes = static_cast<int>((boundaryEdges.size() * boundaryEdges.size()) / 500);
 }
 

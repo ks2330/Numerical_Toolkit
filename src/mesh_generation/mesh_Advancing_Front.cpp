@@ -1,6 +1,7 @@
 #include <vector>
 #include <algorithm>
 #include <iostream>
+#include <stdexcept>
 #include <cmath>
 #include "mesh_generation/mesh_generation.h"
 #include "mesh_generation/quadtree.h"
@@ -11,21 +12,17 @@ void run_Advancing_Front() {
     std::cout << "Advancing Front method is not yet implemented.\n";
 }
 
-void Mesh::AdvancingFront() {
+void Mesh::advancingFront() {
 
     const int aerofoil_group_id = groupId("aerofoil");
     const int boundary_group_id = groupId("outer");
 
 
-    if (aerofoil_group_id == -1) {
-        std::cerr << "Could not find the 'aerofoil' boundary group.\n";
-        return;
-    }
+    if (aerofoil_group_id == -1)
+        throw std::runtime_error("advancingFront: 'aerofoil' boundary group not registered");
 
-    if (boundary_group_id == -1) {
-        std::cerr << "Could not find the 'boundary' boundary group.\n";
-        return;
-    }
+    if (boundary_group_id == -1)
+        throw std::runtime_error("advancingFront: 'outer' boundary group not registered");
 
     std::cout << "Running Advancing Front \n";
 
@@ -51,7 +48,7 @@ void Mesh::AdvancingFront() {
         double angle = ccw ? -M_PI/3 : M_PI/3;
 
         Node p_Ideal = RotateVector(getNodeByID(edge.n0_id), getNodeByID(edge.n1_id), angle);
-        std::vector<Node> nearbyNodes = NodesWithinDistanceAdvancingFront(p_Ideal, s);
+        std::vector<Node> nearbyNodes = nodesWithinDistanceAdvancingFront(p_Ideal, s);
 
 
         if (!nearbyNodes.empty()) {
