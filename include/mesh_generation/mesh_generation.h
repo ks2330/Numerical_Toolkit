@@ -55,7 +55,7 @@ public:
     const std::map<int, std::string>& getGroups() const { return boundaryGroups; }
     static void refineMesh() {}
 
-    void init(const std::string& filename);
+    void init(const std::string& filename, double density = 1.0);
     void buildNeighbours();
     void printMeshInfo() const;
     int getMaxNodeRow() const;
@@ -110,7 +110,7 @@ private:
 
     std::unique_ptr<Quadtree> node_quadtree;
 
-    std::vector<Node> initPoisson();
+    std::vector<Node> initPoisson(double gridSpacing);
 
     void parseBoundaryCSV(const std::string& filename);
     void parseAerofoilDAT(const std::string& filename);
@@ -118,7 +118,7 @@ private:
     void createAerofoilBoundary();
     void buildFlatNodeList();
     void buildEdges(const std::vector<Node>& poly, int group_id);
-    void getInteriorNodeNumber();
+    void getInteriorNodeNumber(double density);
 
     bool isSdistanceTooClose(const Node& node, double s, double s_boundary);
     double getClosestHoleDistance(const Node& node);

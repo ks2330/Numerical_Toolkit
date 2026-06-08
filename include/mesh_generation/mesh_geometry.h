@@ -95,6 +95,16 @@ inline double aspectRatio(const Node& a, const Node& b, const Node& c) {
     return (0.433 * longest * longest) / area;
 }
 
+inline double polygonArea(const std::vector<Node>& poly) {
+    double area = 0.0;
+    int n = static_cast<int>(poly.size());
+    for (int i = 0; i < n; ++i) {
+        int j = (i + 1) % n;
+        area += poly[i].x * poly[j].y - poly[j].x * poly[i].y;
+    }
+    return 0.5 * std::abs(area);
+}
+
 inline Node RotateVector(Node a, Node b, double angle) {
     double cosA = std::cos(angle), sinA = std::sin(angle);
     return {cosA *(b.x - a.x) - sinA * (b.y - a.y) + a.x,

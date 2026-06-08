@@ -8,7 +8,7 @@
 
 namespace meshgeneration {
 
-void Mesh::init(const std::string& filename) {
+void Mesh::init(const std::string& filename, double density) {
     nodes.clear(); edges.clear(); boundaryEdges.clear(); elements.clear();
     boundaryNodes.clear(); holeNodes.clear(); internalNodes.clear();
     boundaryGroups.clear();
@@ -40,7 +40,7 @@ void Mesh::init(const std::string& filename) {
         throw std::runtime_error("Unsupported file format: " + ext);
     }
     boundaryLayerSeeding();
-    getInteriorNodeNumber();
+    getInteriorNodeNumber(density);
 }
 
 void Mesh::parseBoundaryCSV(const std::string& filename) {
@@ -192,8 +192,11 @@ void Mesh::buildNeighbours() {
     }
 }
 
-void Mesh::getInteriorNodeNumber() {
-    numRandomNodes = static_cast<int>((boundaryEdges.size() * boundaryEdges.size()) / 500);
+void Mesh::getInteriorNodeNumber(double density) {
+    double area = polygonArea(boundaryNodes);
+    if (!holeNodes.empty())
+        area -= polygonArea(holeNodes);
+    numRandomNodes = std::max(1, static_cast<int>(density * area));
 }
 
 int Mesh::getMaxNodeRow() const {

@@ -16,19 +16,26 @@ void Mesh::generateRandomNodes() {
     double minX = boundingBoxNodes[0].x, maxX = boundingBoxNodes[1].x;
     double minY = boundingBoxNodes[0].y, maxY = boundingBoxNodes[3].y;
 
-    // 1. Define the AABB for the entire domain
     AABB domain_boundary = {
-        (minX + maxX) / 2.0,      // center x
-        (minY + maxY) / 2.0,      // center y
-        (maxX - minX) / 2.0,      // half_width
-        (maxY - minY) / 2.0       // half_height
+        (minX + maxX) / 2.0,
+        (minY + maxY) / 2.0,
+        (maxX - minX) / 2.0,
+        (maxY - minY) / 2.0
     };
 
     node_quadtree = std::make_unique<Quadtree>(domain_boundary);
 
+    for (const auto& n : boundaryNodes) node_quadtree->insert(n);
+    for (const auto& n : holeNodes)     node_quadtree->insert(n);
+
+    double area = polygonArea(boundaryNodes);
+    if (!holeNodes.empty()) area -= polygonArea(holeNodes);
+
+    double gridSpacing = std::sqrt(area / numRandomNodes);
+    double s_min = gridSpacing * 0.8;
+
     int k = 30;
-    double s_min = std::min((maxX - minX), (maxY - minY)) / std::sqrt(numRandomNodes) * 0.05;
-    std::vector<Node> activeNodes = initPoisson();
+    std::vector<Node> activeNodes = initPoisson(gridSpacing * 2.0);
 
     while (!activeNodes.empty() && internalNodes.size() < static_cast<size_t>(numRandomNodes)) {
         int idx = rand() % activeNodes.size();
@@ -61,40 +68,36 @@ void Mesh::generateRandomNodes() {
     }
 }
 
-std::vector<Node> Mesh::initPoisson() {
-    int nextId = static_cast<int>(nodes.size());
-
-    double minX, maxX, minY, maxY;
-    if (!boundaryNodes.empty()) {
-        auto bbox = GetBoundingBox(boundaryNodes);
-        minX = bbox[0].x; maxX = bbox[1].x; minY = bbox[0].y; maxY = bbox[3].y;
-    } else if (!holeNodes.empty()) {
-        auto bbox = GetBoundingBox(holeNodes);
-        minX = bbox[0].x; maxX = bbox[1].x; minY = bbox[0].y; maxY = bbox[3].y;
-    } else {
+std::vector<Node> Mesh::initPoisson(double gridSpacing) {
+    if (boundaryNodes.empty())
         return {};
-    }
+
+    auto bbox = GetBoundingBox(boundaryNodes);
+    double minX = bbox[0].x, maxX = bbox[1].x;
+    double minY = bbox[0].y, maxY = bbox[3].y;
 
     std::vector<Node> activeNodes;
+    double jitter = gridSpacing * 0.3;
 
-    bool placed = false;
-    int attempts = 0;
-    while (!placed && attempts < 10000) {
-        ++attempts;
-        double x = static_cast<double>(rand()) / RAND_MAX * (maxX - minX) + minX;
-        double y = static_cast<double>(rand()) / RAND_MAX * (maxY - minY) + minY;
-        Node seed = {x, y, nextId, NodeType::Internal, -1};
-        bool inOuter = isPointInPolygon(seed, boundaryNodes);
-        bool inHole  = !holeNodes.empty() && isPointInPolygon(seed, holeNodes);
-        if (inOuter && !inHole) {
-            internalNodes.push_back(seed);
-            nodes.push_back(seed);
-            activeNodes.push_back(seed);
-            placed = true;
+    for (double y = minY + gridSpacing * 0.5; y < maxY; y += gridSpacing) {
+        for (double x = minX + gridSpacing * 0.5; x < maxX; x += gridSpacing) {
+            double jx = (static_cast<double>(rand()) / RAND_MAX - 0.5) * 2.0 * jitter;
+            double jy = (static_cast<double>(rand()) / RAND_MAX - 0.5) * 2.0 * jitter;
+            Node seed = {x + jx, y + jy, static_cast<int>(nodes.size()), NodeType::Internal, -1};
+            bool inOuter = isPointInPolygon(seed, boundaryNodes);
+            bool inHole  = !holeNodes.empty() && isPointInPolygon(seed, holeNodes);
+            if (inOuter && !inHole) {
+                internalNodes.push_back(seed);
+                nodes.push_back(seed);
+                node_quadtree->insert(seed);
+                activeNodes.push_back(seed);
+            }
         }
     }
-    if (!placed)
-        throw std::runtime_error("Failed to place initial Poisson seed node — check boundary geometry");
+
+    if (activeNodes.empty())
+        throw std::runtime_error("initPoisson: no seed nodes could be placed — check boundary geometry");
+
     return activeNodes;
 }
 
@@ -140,13 +143,12 @@ void Mesh::boundaryLayerSeeding() {
 }
 
 bool Mesh::isSdistanceTooClose(const Node& node, double s, double s_boundary) {
-    for (const auto& b : boundaryNodes) {
-        double dx = b.x - node.x, dy = b.y - node.y;
-        if (dx*dx + dy*dy < s_boundary*s_boundary) return true;
-    }
-    for (const auto& n : internalNodes) {
+    double queryRadius = std::max(s, s_boundary);
+    AABB queryBox = {node.x, node.y, queryRadius, queryRadius};
+    for (const auto& n : node_quadtree->query(queryBox)) {
         double dx = n.x - node.x, dy = n.y - node.y;
-        if (dx*dx + dy*dy < s*s) return true;
+        double threshold = (n.type == NodeType::Boundary) ? s_boundary : s;
+        if (dx*dx + dy*dy < threshold*threshold) return true;
     }
     return false;
 }

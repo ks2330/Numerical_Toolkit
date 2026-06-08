@@ -15,7 +15,7 @@ namespace app_support::FEM::run
         meshgeneration::Mesh mesh;
         //mesh.initialize(shape, static_cast<int>(dim1), static_cast<int>(dim2), segsPerUnit);
         mesh.init("results/csv/ushape_nodes.csv");
-        mesh.generateRandomNodes();
+        //mesh.generateRandomNodes();
 
         std::cout << "Generated rectangular mesh with " << mesh.nodes.size() << " nodes.\n";
         
@@ -45,9 +45,9 @@ namespace app_support::FEM::run
         return nt::fem::gaussianElimination(K, rhs);
     }
 
-    meshgeneration::Mesh initialise_from_CSV(std::string filename) {
+    meshgeneration::Mesh initialise_from_CSV(std::string filename, double density = 1.0) {
         meshgeneration::Mesh mesh;
-        mesh.init(filename);
+        mesh.init(filename, density);
         mesh.generateRandomNodes();
         return mesh;
     }

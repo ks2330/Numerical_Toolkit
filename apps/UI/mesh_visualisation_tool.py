@@ -304,6 +304,7 @@ def main():
 
     plt.tight_layout()
     out = "results/png/mesh_visualisation.png"
+    os.makedirs(os.path.dirname(out), exist_ok=True)
     plt.savefig(out, dpi=150)
     print(f"Plot saved to {out}")
     plt.show()
