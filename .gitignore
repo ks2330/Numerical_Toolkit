@@ -1,5 +1,6 @@
 # Build output
 build/
+build-release/
 
 # Generated results (CSVs, PNGs, STEPs) — folder structure kept via .gitkeep
 results/csv/*.csv
