@@ -3,66 +3,59 @@
 #include <vector>
 #include "mesh_generation/mesh_generation.h"
 
-namespace app_support::FEM::UI
+namespace app_support::FEM::UI {
 
-{
-    void write_boundry_nodes_to_csv(const meshgeneration::Mesh& mesh, const std::vector<meshgeneration::Node>& nodes, const std::string& outputPath){
-        const std::string outputPath_NODES = "boundary_nodes_rectangular.csv";
-        std::ofstream nodesFile(outputPath_NODES);
-        nodesFile << "id,x,y\n";
-        for (size_t i = 0; i < mesh.nodes.size(); ++i) {
-            nodesFile << i << ","
-                    << mesh.nodes[i].x << ","
-                    << mesh.nodes[i].y << "\n";
-        }
-        nodesFile.close();
-        std::cout << "Intial mesh nodes: " << mesh.nodes.size() << " nodes written to " << outputPath_NODES << "\n";
+static std::ofstream openCSV(const std::string& path, const std::string& header) {
+    std::ofstream f(path);
+    if (!f.is_open()) { std::cerr << "Could not write to " << path << "\n"; return f; }
+    f << header << "\n";
+    return f;
+}
+
+void write_boundry_nodes_to_csv(const meshgeneration::Mesh& mesh, const std::vector<meshgeneration::Node>& nodes, const std::string& outputPath) {
+    auto f = openCSV(outputPath, "id,x,y");
+    if (!f.is_open()) return;
+    for (size_t i = 0; i < mesh.nodes.size(); ++i)
+        f << i << "," << mesh.nodes[i].x << "," << mesh.nodes[i].y << "\n";
+    std::cout << "Intial mesh nodes: " << mesh.nodes.size() << " nodes written to " << outputPath << "\n";
+}
+
+void write_triangulation_to_csv(const meshgeneration::Mesh& mesh, const std::vector<meshgeneration::Element>& elements, const std::vector<meshgeneration::Node>& nodes, const std::string& outputPath) {
+    auto f = openCSV(outputPath, "ax,ay,bx,by,cx,cy");
+    if (!f.is_open()) return;
+    for (const auto& T : mesh.elements) {
+        const auto& n0 = mesh.getNodeByID(T.n0_id);
+        const auto& n1 = mesh.getNodeByID(T.n1_id);
+        const auto& n2 = mesh.getNodeByID(T.n2_id);
+        f << n0.x << "," << n0.y << "," << n1.x << "," << n1.y << "," << n2.x << "," << n2.y << "\n";
     }
-    void write_triangulation_to_csv(const meshgeneration::Mesh& mesh, const std::vector<meshgeneration::Element>& elements, const std::vector<meshgeneration::Node>& nodes, const std::string& outputPath){
-        std::ofstream triFile("triangulation.csv");
-        triFile << "ax,ay,bx,by,cx,cy\n";
-        for (const auto& T : mesh.elements)
-        // We can access the node coordinates using the node IDs stored in the element.
-        // Assuming node IDs are 0-based and correspond to their index in the nodes vector:
-            {
-                const auto& n0 = mesh.nodes[T.n0_id];
-                const auto& n1 = mesh.nodes[T.n1_id];
-                const auto& n2 = mesh.nodes[T.n2_id];
-                triFile << n0.x << "," << n0.y << ","
-                        << n1.x << "," << n1.y << ","
-                        << n2.x << "," << n2.y << "\n";
-            }
-        triFile.close();
-        std::cout << "Initial triangulation: " << mesh.elements.size() << " triangles written to triangulation.csv\n";
+    std::cout << "Initial triangulation: " << mesh.elements.size() << " triangles written to " << outputPath << "\n";
+}
 
-    }
-    
-    void write_Solution_to_csv(std::vector<double>& T, const std::string& outputPath, int N, meshgeneration::Mesh& mesh){
-        // ── Write node data ──────────────────────────────────────────────────
-        std::ofstream nodesFile("steady_state_nodes.csv");
-        nodesFile << "id,x,y,temperature\n";
-        for (int i = 0; i < N; ++i) {
-            nodesFile << i << ","
-                    << mesh.nodes[i].x << ","
-                    << mesh.nodes[i].y << ","
-                    << T[i] << "\n";
-        }
-        nodesFile.close();
+void write_Solution_to_csv(std::vector<double>& T, const std::string& outputPath, int N, meshgeneration::Mesh& mesh) {
+    auto f = openCSV(outputPath, "id,x,y,temperature");
+    if (!f.is_open()) return;
+    for (int i = 0; i < N; ++i)
+        f << i << "," << mesh.nodes[i].x << "," << mesh.nodes[i].y << "," << T[i] << "\n";
 
-        // ── Write element data (node indices) ─────────────────────────────────
-        std::ofstream elemsFile("steady_state_elements.csv");
-        elemsFile << "n0,n1,n2\n";
-        for (const auto& elem : mesh.elements) {
-            elemsFile << elem.n0_id << ","
-                     << elem.n1_id << ","
-                     << elem.n2_id << "\n";
-        }
-        elemsFile.close();
+    std::string elemsPath = outputPath;
+    size_t pos = elemsPath.rfind("steady_state_nodes");
+    if (pos != std::string::npos) elemsPath.replace(pos, 18, "steady_state_elements");
 
-        std::cout << "Steady-state solution written to:\n"
-            << "  steady_state_nodes.csv\n"
-            << "  steady_state_elements.csv\n"
-            << "Run plot_steady_state.py to visualise.\n";
-    }
+    auto ef = openCSV(elemsPath, "n0,n1,n2");
+    if (!ef.is_open()) return;
+    for (const auto& elem : mesh.elements)
+        ef << elem.n0_id << "," << elem.n1_id << "," << elem.n2_id << "\n";
+
+    std::cout << "Steady-state solution written to:\n  " << outputPath << "\n  " << elemsPath << "\n";
+}
+
+void write_pressure_field_to_csv(const std::vector<double>& Cp, const meshgeneration::Mesh& mesh, const std::string& outputPath) {
+    auto f = openCSV(outputPath, "id,x,y,Cp");
+    if (!f.is_open()) return;
+    for (int i = 0; i < static_cast<int>(Cp.size()); ++i)
+        f << i << "," << mesh.nodes[i].x << "," << mesh.nodes[i].y << "," << Cp[i] << "\n";
+    std::cout << "Pressure field written to " << outputPath << "\n";
+}
 
 }

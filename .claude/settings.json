@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ctest --test-dir build -C Debug -L toolkit --output-on-failure)",
+      "Bash(ctest --test-dir build -C Debug -L toolkit)"
+    ]
+  }
+}

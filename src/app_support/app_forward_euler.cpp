@@ -20,12 +20,12 @@ namespace app_support::forward_euler
         std::cout << "Grid size (number of points): " << grid.size() << std::endl;
 
         std::cout << "\n--- Build Matrix ---" << std::endl;
-        std::vector<Eigen::Triplet<double>> triplets = nt::setup::init_matrix(N, U1, U0, UL);
+        // std::vector<Eigen::Triplet<double>> triplets = nt::setup::init_matrix(N, U1, U0, UL);
 
-        std::cout << "Triplets for initial conditions:" << std::endl;
-        Eigen::SparseMatrix<double> A = nt::matrix::build_matrix(grid, triplets);
-        std::cout << "Sparse Matrix A:" << std::endl;
-        std::cout << A.toDense() << std::endl;
+        // std::cout << "Triplets for initial conditions:" << std::endl;
+        // Eigen::SparseMatrix<double> A = nt::matrix::build_matrix(grid, triplets);
+        // std::cout << "Sparse Matrix A:" << std::endl;
+        // std::cout << A.toDense() << std::endl;
 
         std::cout << "\n--- Setting Up Coefficients. ---" << std::endl;
         double alpha = nt::nm::alpha_value(k, rho, cp);
@@ -39,6 +39,6 @@ namespace app_support::forward_euler
         std::cout << forwardEulerCoeffs.toDense() << std::endl;
 
         std::cout << "\n--- Forward Euler Step ---" << std::endl;
-        nt::fe::solve_forward_euler(forwardEulerCoeffs, A.row(0), p, max_steps);
+        // nt::fe::solve_forward_euler(forwardEulerCoeffs, A.row(0), p, max_steps);
     }
 }

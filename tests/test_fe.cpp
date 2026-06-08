@@ -68,7 +68,9 @@ TEST(Forward_Euler_Test_all_Step, SolveEuler) {
     Eigen::VectorXd u_current(N);
     u_current << 50, 0, 0, 0, 0; // Initial condition: u(0) = 50, u(1) = u(2) = u(3) = 0, u(4) = 0
     Eigen::VectorXd expected_u_final(N);
-    expected_u_final << 50, 31.70, 16.80, 6.72, 0; // Expected result after all steps
+    // Exact values derived by 6 steps of u_i += p*(u_{i-1} - 2*u_i + u_{i+1}) with p=1/3:
+    // u[1]=23100/729, u[2]=12250/729, u[3]=4900/729
+    expected_u_final << 50, 23100.0/729.0, 12250.0/729.0, 4900.0/729.0, 0;
     Eigen::VectorXd actual_u_final = nt::fe::solve_forward_euler(expected, u_current, p, max_steps);
 
     EXPECT_TRUE(actual_u_final.isApprox(expected_u_final)) << "The solve_forward_euler function did not produce the expected result after all steps.";
