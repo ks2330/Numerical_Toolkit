@@ -1,5 +1,6 @@
 #pragma once
-#include "mesh_generation/mesh_geometry.h"##include <map>
+#include "mesh_generation/mesh_geometry.h"
+#include <map>
 #include <vector>
 #include <utility>
 #include <algorithm>
@@ -12,11 +13,12 @@ namespace nt::fvm
     };
 
     struct Face {
-        int n1_id, n2_id;    // Node IDs of the face endpoints
-        int leftElement_id;  // cell index on the left (owner)
-        int rightElement_id; // cell index on the right (-1 if boundary)
-        double length;       // length of the face (the 2D "area" A_f)
-        Vec2 normal;         // unit normal, oriented outward from the left cell
+        int n1_id, n2_id;
+        int leftElement_id;
+        int rightElement_id;
+        double length;  
+        Vec2 normal;  
+        int bcType;
     };
 
     // --- Cell geometry ---
@@ -99,16 +101,29 @@ namespace nt::fvm
         const auto& left = elements[f.leftElement_id];
         meshgeneration::Node c = cellCentroid(nodes[left.n0_id], nodes[left.n1_id], nodes[left.n2_id]);
         f.normal = faceNormal(n1, n2, c);
+        f.bcType = -1;   // interior by default; buildFaces tags boundary faces
         return f;
     }
 
     // --- Face list ---
 
     inline std::vector<Face> buildFaces(const std::vector<meshgeneration::Element>& elements,
-                                        const std::vector<meshgeneration::Node>& nodes) {
+                                        const std::vector<meshgeneration::Node>& nodes,
+                                        const std::vector<meshgeneration::Edge>& boundaryEdges = {}) {
+        // Look up each boundary edge's group id by its canonical (min,max) node pair.
+        std::map<std::pair<int,int>, int> edgeGroups;
+        for (const auto& e : boundaryEdges)
+            edgeGroups[canonicalEdge(e.n0_id, e.n1_id)] = e.group_id;
+
         std::vector<Face> faces;
-        for (const auto& [edgeKey, cells] : buildEdgeMap(elements))
-            faces.push_back(makeFace(edgeKey, cells, elements, nodes));
+        for (const auto& [edgeKey, cells] : buildEdgeMap(elements)) {
+            Face f = makeFace(edgeKey, cells, elements, nodes);
+            if (f.rightElement_id == -1) {                 // boundary face -> inherit the edge's group
+                auto it = edgeGroups.find(edgeKey);
+                if (it != edgeGroups.end()) f.bcType = it->second;
+            }
+            faces.push_back(f);
+        }
         return faces;
     }
 }
