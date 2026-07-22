@@ -21,7 +21,7 @@ namespace nt::fem::solvers
         meshgeneration::Node n2 = mesh.getNodeByID(element.n1_id);
         meshgeneration::Node n3 = mesh.getNodeByID(element.n2_id);
 
-        std::vector<double> stiffnessMatrix = {9, 0.0};
+        std::vector<double> stiffnessMatrix(9, 0.0);   // 9-element (3x3) vector of zeros — parentheses, not braces
 
         double area = 0.5 * std::abs(n1.x * (n2.y - n3.y) + n2.x * (n3.y - n1.y) + n3.x * (n1.y - n2.y));
         
