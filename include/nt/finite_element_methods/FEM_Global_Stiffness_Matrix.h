@@ -82,8 +82,50 @@ namespace nt::fem
         rhs[nodeID] = value;
     }
 
-    // Solves Ax = b via Gaussian elimination with partial pivoting. Takes A and b by value.
-    inline std::vector<double> gaussianElimination(std::vector<std::vector<double>> A, std::vector<double> b) {
+    inline std::vector<double> assembleGlobalStiffnessMatrixFlat(const meshgeneration::Mesh& mesh) {
+        int N = static_cast<int>(mesh.nodes.size());
+        
+        std::vector<double> K(N * N, 0.0); 
+        for (const auto& element : mesh.elements) {
+            Matrix3x3 Ke = computeElementStiffnessMatrix(mesh, element);
+            
+            int globalNodeIndices[3] = {
+                (int)mesh.getNodeIndex(element.n0_id),
+                (int)mesh.getNodeIndex(element.n1_id),
+                (int)mesh.getNodeIndex(element.n2_id)
+            };
+            
+
+            for (int i = 0; i < 3; ++i) {
+                int row = globalNodeIndices[i];
+                for (int j = 0; j < 3; ++j) {
+                    int col = globalNodeIndices[j];
+                    K[row * N + col] += Ke.data[i][j];
+                }
+            }
+        }
+        return K;
+    }
+
+
+    inline void applyDirichletBCFlat(std::vector<double>& K, std::vector<double>& rhs, int nodeID, double value) {
+        int N = static_cast<int>(rhs.size());
+        if (nodeID < 0 || nodeID >= N || K.size() != static_cast<size_t>(N) * N) {
+            std::cerr << "applyDirichletBCFlat: invalid input size or nodeID " << nodeID << "\n";
+            return;
+        }
+        for (int i = 0; i < N; ++i) {
+            if (i == nodeID) continue;
+            rhs[i] -= K[i * N + nodeID] * value;
+            K[i * N + nodeID] = 0.0;
+            K[nodeID * N + i] = 0.0;
+        }
+        K[nodeID * N + nodeID] = 1.0;
+        rhs[nodeID] = value;
+    }
+
+        // Solves Ax = b via Gaussian elimination with partial pivoting. Takes A and b by value.
+    inline std::vector<double> gaussianElimination(std::vector<std::vector<double>>& A, std::vector<double>& b) {
         int N = static_cast<int>(A.size());
         for (int col = 0; col < N; ++col) {
             // Partial pivoting
@@ -117,4 +159,20 @@ namespace nt::fem
         }
         return x;
     }
+
+    inline std::vector<double> gaussianEliminationFlat(std::vector<double>& K, std::vector<double>& rhs) {
+        int N = static_cast<int>(rhs.size());
+        if (K.size() != static_cast<size_t>(N) * N) {
+            std::cerr << "gaussianEliminationFlat: K has incorrect size for rhs.\n";
+            return {}; 
+        }
+        std::vector<std::vector<double>> A(N, std::vector<double>(N));
+        for (int i = 0; i < N; ++i) {
+            for (int j = 0; j < N; ++j) {
+                A[i][j] = K[i * N + j];
+            }
+        }
+        return gaussianElimination(A, rhs);
+    }
+
 }

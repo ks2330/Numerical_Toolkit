@@ -91,4 +91,5 @@ file(MAKE_DIRECTORY ${CMAKE_SOURCE_DIR}/results/metrics)
 add_subdirectory(apps/lid_driven_cavity)
 add_subdirectory(apps/1d_heat_equation)
 add_subdirectory(apps/UI)
+add_subdirectory(apps/Bench)
 # ad

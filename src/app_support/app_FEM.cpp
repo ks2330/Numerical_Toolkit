@@ -15,7 +15,7 @@ namespace app_support::FEM::run
         meshgeneration::Mesh mesh;
         //mesh.initialize(shape, static_cast<int>(dim1), static_cast<int>(dim2), segsPerUnit);
         mesh.init("results/csv/ushape_nodes.csv");
-        //mesh.generateRandomNodes();
+        mesh.generateRandomNodes();
 
         std::cout << "Generated rectangular mesh with " << mesh.nodes.size() << " nodes.\n";
         
@@ -45,6 +45,15 @@ namespace app_support::FEM::run
         return nt::fem::gaussianElimination(K, rhs);
     }
 
+    std::vector<double> run_Potential_Flow_Flat(meshgeneration::Mesh& mesh,
+                                        double U_inf, double alpha = 0.0) {
+    const int N = static_cast<int>(mesh.nodes.size());
+    auto K = nt::fem::assembleGlobalStiffnessMatrixFlat(mesh);
+    std::vector<double> rhs(N, 0.0);
+    nt::fem::applyPotentialFlowBCsFlat(mesh, K, rhs, U_inf, alpha);
+    return nt::fem::gaussianEliminationFlat(K, rhs);
+    }
+    
     meshgeneration::Mesh initialise_from_CSV(std::string filename, double density = 1.0) {
         meshgeneration::Mesh mesh;
         mesh.init(filename, density);

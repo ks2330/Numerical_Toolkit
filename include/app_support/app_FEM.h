@@ -11,6 +11,8 @@ namespace app_support::FEM::run
                                                int inletGroup, double T_inlet,
                                                int outletGroup, double T_outlet);
     std::vector<double> run_Potential_Flow(meshgeneration::Mesh& mesh,
-                                           double U_inf, double alpha = 0.0);
+                                            double U_inf, double alpha = 0.0);
+    std::vector<double> run_Potential_Flow_Flat(meshgeneration::Mesh& mesh,
+                                            double U_inf, double alpha = 0.0);
     meshgeneration::Mesh initialise_from_CSV(std::string filename, double density = 1.0);
 }

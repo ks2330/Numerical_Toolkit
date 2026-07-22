@@ -3,7 +3,7 @@
 #include "FEM_Global_Stiffness_Matrix.h"
 #include "mesh_generation/mesh_generation.h"
 
-namespace nt::fem
+namespace nt::fem::solvers
 {
     struct Velocity {
         double u;
@@ -14,9 +14,11 @@ namespace nt::fem
     // phi = U_inf * (x*cos(alpha) + y*sin(alpha))
     // Applied to outer boundary nodes (group "outer").
     // Aerofoil surface uses zero normal flux — naturwal BC, no action needed.
+
+    template <typename MatrixContainer>
     inline void applyPotentialFlowBCs(
         const meshgeneration::Mesh& mesh,
-        std::vector<std::vector<double>>& K,
+        MatrixContainer& K,
         std::vector<double>& rhs,
         double U_inf,
         double alpha = 0.0)
@@ -29,23 +31,6 @@ namespace nt::fem
             }
         }
     }
-
-    inline void applyPotentialFlowBCsFlat(
-        const meshgeneration::Mesh& mesh,
-        std::vector<double>& K,
-        std::vector<double>& rhs,
-        double U_inf,
-        double alpha = 0.0)
-    {
-        for (int i = 0; i < static_cast<int>(mesh.nodes.size()); ++i) {
-            if (mesh.nodes[i].type == meshgeneration::NodeType::Boundary) {
-                double phi = U_inf * (mesh.nodes[i].x * std::cos(alpha)
-                                    + mesh.nodes[i].y * std::sin(alpha));
-                applyDirichletBCFlat(K, rhs, i, phi);
-            }
-        }
-    }
-
 
     inline std::vector<Velocity> computeVelocityField(
         const meshgeneration::Mesh& mesh, 
