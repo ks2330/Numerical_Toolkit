@@ -2,6 +2,3 @@
 	path = external/eigen
 	url = https://gitlab.com/libeigen/eigen.git
 
-[submodule "external/Eigen"]
-	path = external/Eigen
-	url = https://gitlab.com/libeigen/eigen.git
