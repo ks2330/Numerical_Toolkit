@@ -1,5 +1,5 @@
 #include <iostream>
-#include <eigen/Dense>
+#include <Eigen/Dense>
 #include <fstream>
 #include "nt/setup/grid.h"
 #include "nt/setup/init_matrix.h"

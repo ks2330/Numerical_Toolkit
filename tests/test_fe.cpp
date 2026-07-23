@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include <eigen/Sparse>
+#include <Eigen/Sparse>
 #include "nt/finite_methods/forward_euler.h"
 
 TEST(Forward_Euler_Test, SetupCoeff) {

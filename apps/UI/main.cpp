@@ -23,7 +23,7 @@ struct Config {
     std::string outputCSV;
     std::string triangulationCSV;
     std::string solutionCSV;
-    std::string aerfoilDAT;
+    std::string aerofoilDAT;
     std::string pressureFieldCSV;
 };
 
@@ -38,15 +38,15 @@ Config config = {
     .outputCSV = "results/csv/ushape_nodes.csv",
     .triangulationCSV = "results/csv/triangulation.csv",
     .solutionCSV = "results/csv/steady_state_nodes.csv",
-    .aerfoilDAT = "results/dat/aerfoil.dat",
+    .aerofoilDAT = "results/dat/aerofoil.dat",
     .pressureFieldCSV = "results/csv/pressure_field.csv",
 };
 
 int main() {
     try {
         //meshgeneration::Mesh mesh = app_support::FEM::run::run_FEM(shape, nx, ny, segsPerUnit, numRandomNodes);
-        meshgeneration::Mesh mesh = app_support::FEM::run::initialise_from_CSV(config.aerfoilDAT, 100.0);
-        meshgeneration::AdvancingFrontTriangulation algo;
+        meshgeneration::Mesh mesh = app_support::FEM::run::initialise_from_CSV(config.aerofoilDAT, 100.0);
+        meshgeneration::DelaunayTriangulation algo;
         mesh.triangulate(algo);
         app_support::FEM::UI::write_boundry_nodes_to_csv(mesh, mesh.nodes, config.boundaryCSV);
         app_support::FEM::UI::write_triangulation_to_csv(mesh, mesh.elements, mesh.nodes, config.triangulationCSV);

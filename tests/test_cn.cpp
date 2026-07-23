@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include <eigen/Sparse>
+#include <Eigen/Sparse>
 #include "nt/finite_methods/crank_nicholson.h"
 
 TEST(Crank_Nicholson_Test, SetupCoeff_lhs) {

@@ -161,7 +161,7 @@ def plot_pressure_field():
 
     # Identify aerofoil surface nodes by exact coordinate match against the DAT file.
     # Coordinates are rounded to 5 d.p. to survive C++ stream-formatting → CSV round-trip.
-    dat_path  = "results/dat/aerfoil.dat"
+    dat_path  = "results/dat/aerofoil.dat"
     surf_set: set = set()
     if os.path.exists(dat_path):
         with open(dat_path) as _f:

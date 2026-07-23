@@ -1,0 +1,84 @@
+{
+    "version": 3,
+    "cmakeMinimumRequired": { "major": 3, "minor": 21, "patch": 0 },
+
+    "configurePresets": [
+        {
+            "name": "base",
+            "hidden": true,
+            "binaryDir": "${sourceDir}/build"
+        },
+        {
+            "name": "debug",
+            "inherits": "base",
+            "displayName": "Debug (local)",
+            "description": "Local debug build — uses the platform default generator"
+        },
+        {
+            "name": "release",
+            "inherits": "base",
+            "displayName": "Release (local)",
+            "binaryDir": "${sourceDir}/build-release",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release"
+            }
+        },
+        {
+            "name": "ci",
+            "displayName": "CI",
+            "description": "Release build for CI runners (Linux / Ninja)",
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release"
+            }
+        }
+    ],
+
+    "buildPresets": [
+        {
+            "name": "debug",
+            "displayName": "Build Debug",
+            "configurePreset": "debug",
+            "configuration": "Debug"
+        },
+        {
+            "name": "release",
+            "displayName": "Build Release",
+            "configurePreset": "release",
+            "configuration": "Release"
+        },
+        {
+            "name": "ci",
+            "displayName": "Build CI",
+            "configurePreset": "ci",
+            "jobs": 4
+        }
+    ],
+
+    "testPresets": [
+        {
+            "name": "debug",
+            "displayName": "Test Debug",
+            "configurePreset": "debug",
+            "configuration": "Debug",
+            "output": { "outputOnFailure": true },
+            "filter": { "include": { "label": "toolkit" } }
+        },
+        {
+            "name": "release",
+            "displayName": "Test Release",
+            "configurePreset": "release",
+            "configuration": "Release",
+            "output": { "outputOnFailure": true },
+            "filter": { "include": { "label": "toolkit" } }
+        },
+        {
+            "name": "ci",
+            "displayName": "Test CI",
+            "configurePreset": "ci",
+            "output": { "outputOnFailure": true },
+            "filter": { "include": { "label": "toolkit" } }
+        }
+    ]
+}

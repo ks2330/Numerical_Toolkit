@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include <eigen/Dense>
+#include <Eigen/Dense>
 
 TEST(MatrixTest, Addition) {
     Eigen::Matrix2d m;

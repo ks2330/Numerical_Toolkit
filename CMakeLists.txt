@@ -43,8 +43,6 @@ add_library(numerical_toolkit
     src/nt/finite_methods/forward_euler.cpp
     src/nt/finite_methods/crank_nicholson.cpp
 
-    src/nt/setup/finite_element_methods/FEM_Global_Stiffness_Matrix.cpp   
-
     src/mesh_generation/mesh_init.cpp
     src/mesh_generation/mesh_sampling.cpp
     src/mesh_generation/mesh_triangulation.cpp
@@ -88,7 +86,6 @@ FetchContent_MakeAvailable(googletest)
 add_subdirectory(tests)
 file(MAKE_DIRECTORY ${CMAKE_SOURCE_DIR}/results/metrics)
 
-add_subdirectory(apps/lid_driven_cavity)
-add_subdirectory(apps/1d_heat_equation)
 add_subdirectory(apps/UI)
+add_subdirectory(apps/FVM_solver)
 # ad

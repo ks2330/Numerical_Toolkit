@@ -110,10 +110,10 @@ void Mesh::createAerofoilBoundary() {
     chord = bbox[1].x - bbox[0].x;
     if (chord <= 0) chord = 1.0;
 
-    double domainMinX = bbox[0].x - 1.0 * chord;
-    double domainMaxX = bbox[1].x + 1.50 * chord;
-    double domainMinY = bbox[0].y - 1.0 * chord;
-    double domainMaxY = bbox[2].y + 1.0 * chord;
+    double domainMinX = bbox[0].x - 5.0 * chord;
+    double domainMaxX = bbox[1].x + 5.0 * chord;
+    double domainMinY = bbox[0].y - 5.0 * chord;
+    double domainMaxY = bbox[2].y + 5.0 * chord;
 
     Node TL = {domainMinX, domainMaxY, -1};
     Node TR = {domainMaxX, domainMaxY, -1};

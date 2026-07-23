@@ -44,9 +44,9 @@ fi
 
 echo "Found executable: $EXE"
 
-# ── 3. Run from apps/UI so generated CSVs land there ─────────────────────────
+# ── 3. Run from project root so the binary's relative paths resolve correctly ──
 echo "[3/3] Running executable and plotting..."
-cd "$SCRIPT_DIR/apps/UI"
+cd "$SCRIPT_DIR"
 "$EXE"
 
 echo "Done"
