@@ -82,6 +82,27 @@ For a NACA-type section at **M = 0.3, α = 2°**, the finite-volume Euler solver
 scheme is diffusive, whereas the true inviscid (d'Alembert) drag is ~0; reducing it is a
 fidelity item on the roadmap (second-order MUSCL reconstruction + near-wall refinement).
 
+## Desktop app (CFD Studio)
+
+An interactive PySide6 front-end drives the solvers through a compiled **pybind11** module
+(`pycfd`): pick the airfoil (NACA 4-digit) and flow parameters, run the solve on a background
+thread with a live convergence plot, and see the pressure/Mach field rendered in-memory with
+matplotlib — no CSV round-trip.
+
+<p align="center">
+  <img src="docs/images/cfd_studio.png" alt="CFD Studio — interactive pressure field around an airfoil" width="85%">
+</p>
+
+```powershell
+py -3.14 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+python python\cfd_studio\app.py
+```
+
+Building the `pycfd` module and full setup: [docs/desktop-app.md](docs/desktop-app.md).
+
+
 ## Build & run
 
 **Prerequisites:** a C++20 compiler, CMake ≥ 3.21, [Ninja](https://ninja-build.org), and git.

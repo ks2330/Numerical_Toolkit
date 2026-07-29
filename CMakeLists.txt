@@ -1,8 +1,7 @@
 cmake_minimum_required(VERSION 3.15)
 project(NumericalToolkit LANGUAGES CXX)
 
-# --- Locate External Dependencies ---
-# Fetch the Eigen library automatically
+
 include(FetchContent)
 FetchContent_Declare(
     Eigen
@@ -10,12 +9,8 @@ FetchContent_Declare(
     GIT_TAG        3.4.0
 )
 
-# When including Eigen via FetchContent, we only want the header-only library.
-# Explicitly disable building Eigen's tests, docs, demos, and blas components
-# to prevent it from running configuration checks that are failing in your
-# environment. This is a robust way to include header-only dependencies.
 set(EIGEN_BUILD_TESTING OFF)
-set(EIGEN_BUILD_DOCS OFF) # Note: In Eigen 3.4.0 it's EIGEN_BUILD_DOCS
+set(EIGEN_BUILD_DOCS OFF) #
 set(EIGEN_BUILD_DEMOS OFF)
 set(EIGEN_BUILD_BLAS OFF)
 
@@ -26,14 +21,9 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-modules-ts")
+    set(NT_STATIC_RUNTIME_FLAGS -static -static-libgcc -static-libstdc++)
 endif()
 
-# The 'file(GLOB_RECURSE ... "src/*.cpp")' command you had would not find the
-# source files in subdirectories like 'src/nt'.
-#
-# While you could fix this with a pattern like "src/**/*.cpp", it is much more
-# robust to list source files explicitly. This ensures that your build system
-# is correctly updated when you add or remove files.
 add_library(numerical_toolkit
     src/nt/setup/build_matrix.cpp
     src/nt/setup/grid.cpp
@@ -56,11 +46,11 @@ add_library(numerical_toolkit
     src/app_support/app_forward_euler.cpp
     src/app_support/app_FEM.cpp
     src/app_support/app_FEM_UI.cpp
+
+    src/app_support/solver_api.cpp
 )
 
-# This tells any target linking to 'numerical_toolkit' to also:
-# 1. Add the project's 'include' directory to its include paths.
-# 2. Link against the Eigen library.
+
 target_include_directories(numerical_toolkit PUBLIC
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include>
@@ -74,18 +64,37 @@ if(MSVC)
     target_compile_definitions(numerical_toolkit PUBLIC _USE_MATH_DEFINES)
 endif()
 
-# Enable testing and fetch Google Test
-enable_testing()
-FetchContent_Declare(
-    googletest
-    GIT_REPOSITORY https://github.com/google/googletest.git
-    GIT_TAG        v1.14.0
-)
-FetchContent_MakeAvailable(googletest)
+# --- Optional components (all default ON; the Python build turns tests/apps OFF) ---
+option(BUILD_TESTS  "Build the Google Test suite"        ON)
+option(BUILD_APPS   "Build the CLI apps"                 ON)
+option(BUILD_PYTHON "Build the pycfd Python bindings"    OFF)
 
-add_subdirectory(tests)
 file(MAKE_DIRECTORY ${CMAKE_SOURCE_DIR}/results/metrics)
 
-add_subdirectory(apps/UI)
-add_subdirectory(apps/FVM_solver)
-# ad
+if(BUILD_TESTS)
+    enable_testing()
+    FetchContent_Declare(
+        googletest
+        GIT_REPOSITORY https://github.com/google/googletest.git
+        GIT_TAG        v1.14.0
+    )
+    FetchContent_MakeAvailable(googletest)
+    add_subdirectory(tests)
+endif()
+
+if(BUILD_APPS)
+    add_subdirectory(apps/UI)
+    add_subdirectory(apps/FVM_solver)
+endif()
+
+# --- Python bindings (pycfd) — opt-in; needs a matching Python + pybind11 ---
+# Uses the pip-installed pybind11 that matches the venv interpreter (not FetchContent, so the
+# version always tracks the Python). Configure with, e.g.:
+#   cmake -S . -B build-py -G "Visual Studio 17 2022" -A x64 \
+#         -DBUILD_PYTHON=ON -DBUILD_TESTS=OFF -DBUILD_APPS=OFF \
+#         -DPython_EXECUTABLE=<venv>/Scripts/python.exe \
+#         -Dpybind11_DIR=<venv>/Lib/site-packages/pybind11/share/cmake/pybind11
+if(BUILD_PYTHON)
+    find_package(pybind11 CONFIG REQUIRED)
+    add_subdirectory(bindings)
+endif()

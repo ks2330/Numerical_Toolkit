@@ -67,6 +67,7 @@ apps/animations/
 __pycache__/
 *.pyc
 *.pyo
+*.pyd            # compiled pybind11 extension (pycfd) — a build artifact, never commit
 .venv/
 venv/
 env/

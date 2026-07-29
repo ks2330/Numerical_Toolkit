@@ -46,6 +46,17 @@ target_link_libraries(FVM_forces_test    PRIVATE gtest_main numerical_toolkit)
 target_link_libraries(CDT_test           PRIVATE gtest_main numerical_toolkit)
 target_compile_definitions(CDT_test PRIVATE NT_DATA_DIR="${PROJECT_SOURCE_DIR}/results/dat")
 
+# Statically link the GCC/C++ runtime into every test exe too, so they run
+# regardless of which MinGW libstdc++/libgcc happens to be first on PATH.
+# (NT_STATIC_RUNTIME_FLAGS is defined in the top-level CMakeLists; empty on non-GNU.)
+set(NT_TEST_TARGETS
+    matrix_test fe_test cn_test Triangulation_test Shape_Gen_test
+    PotentialFlow_test GasModel_test MeshGeometry_test FVM_mesh_test
+    FVM_flux_test FVM_solver_test FVM_forces_test CDT_test)
+foreach(t IN LISTS NT_TEST_TARGETS)
+    target_link_options(${t} PRIVATE ${NT_STATIC_RUNTIME_FLAGS})
+endforeach()
+
 # Discovter and register all tests with CTest.
 # PRE_TEST defers discovery to run time so MinGW runtime DLLs are in PATH.
 # PROPERTIES LABELS "toolkit" lets us filter out Eigen's own 900 registered tests.

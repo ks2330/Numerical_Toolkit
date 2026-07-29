@@ -1,5 +1,9 @@
-build123d==0.10.0
-PySide6==6.8.1
-matplotlib==3.10.0
-numpy==2.3.0
-pyyaml==6.0.2
+# CFD Studio GUI + pycfd bindings — Python deps (verified on CPython 3.14, Windows).
+
+# Runtime
+numpy==2.5.1
+matplotlib==3.11.1
+PySide6==6.11.1
+
+# Build-time 
+pybind11==3.0.4

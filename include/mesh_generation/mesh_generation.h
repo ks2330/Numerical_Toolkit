@@ -71,6 +71,9 @@ public:
     void enforceConstraint();
     void enforceOutsideConstraints();
     void deleteHoles();
+    void generateNACA4(int digits4, int nPoints = 160, double chord = 1.0);
+
+    void buildAerofoilDomain(double density);
 
     void metricAngles(const std::string& outputFile);
     void metricAspectRatios(const std::string& outputFile);
@@ -113,7 +116,6 @@ private:
     std::vector<Node> initPoisson(double gridSpacing);
 
     void parseBoundaryCSV(const std::string& filename);
-    void parseAerofoilDAT(const std::string& filename);
     void createOuterBoundary();
     void createAerofoilBoundary();
     void buildFlatNodeList();

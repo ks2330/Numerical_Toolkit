@@ -20,9 +20,14 @@ rm -f results/metrics/aspect_ratio_distribution_improved.csv
 
 mkdir -p results/metrics
 # ── 1. Configure ─────────────────────────────────────────────────────────────
+GENERATOR="Ninja"
+if [ -f "build/CMakeCache.txt" ] && ! grep -q "CMAKE_GENERATOR:INTERNAL=$GENERATOR" "build/CMakeCache.txt"; then
+    echo "[1/4] Existing build/ used a different generator — reconfiguring with $GENERATOR."
+    rm -rf build
+fi
 if [ ! -d "build" ]; then
-    echo "[1/4] Configuring CMake..."
-    cmake -S . -B build
+    echo "[1/4] Configuring CMake ($GENERATOR)..."
+    cmake -S . -B build -G "$GENERATOR"
 else
     echo "[1/4] Build directory already exists, skipping configure."
 fi
