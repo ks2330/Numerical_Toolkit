@@ -6,13 +6,17 @@
         {
             "name": "base",
             "hidden": true,
+            "generator": "Ninja",
             "binaryDir": "${sourceDir}/build"
         },
         {
             "name": "debug",
             "inherits": "base",
             "displayName": "Debug (local)",
-            "description": "Local debug build — uses the platform default generator"
+            "description": "Local debug build (Ninja)",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug"
+            }
         },
         {
             "name": "release",

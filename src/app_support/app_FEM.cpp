@@ -52,4 +52,10 @@ namespace app_support::FEM::run
         return mesh;
     }
 
+    meshgeneration::Mesh initialise_from_NACA(int digits4, int nPoints, double chord) {
+        meshgeneration::Mesh mesh;
+        mesh.generateNACA4(digits4, nPoints, chord);
+        return mesh;
+    }
+
 }

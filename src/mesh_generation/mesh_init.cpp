@@ -5,6 +5,8 @@
 #include <filesystem>
 #include <algorithm>
 #include <stdexcept>
+#include <cmath>
+#include <cstdio>
 
 namespace meshgeneration {
 
@@ -13,32 +15,20 @@ void Mesh::init(const std::string& filename, double density) {
     boundaryNodes.clear(); holeNodes.clear(); internalNodes.clear();
     boundaryGroups.clear();
 
+    // File loading is CSV-only (the FEM domain boundary). 
     std::string ext = std::filesystem::path(filename).extension().string();
-    if (ext == ".csv") {
-        parseBoundaryCSV(filename);
-        if (nodes.empty())
-            throw std::runtime_error("No nodes loaded from " + filename);
-        registerGroup(0, "outer");
-        createOuterBoundary();
-        buildFlatNodeList();
-        buildEdges(boundaryNodes, 0);
-        boundaryEdges = edges;
-    } else if (ext == ".dat") {
-        parseAerofoilDAT(filename);
-        if (holeNodes.empty())
-            throw std::runtime_error("No nodes loaded from " + filename);
-        registerGroup(0, "outer");
-        registerGroup(1, "aerofoil");
-        registerGroup(2, "inlet");
-        registerGroup(3, "outlet");
-        createAerofoilBoundary();
-        buildFlatNodeList();
-        buildEdges(boundaryNodes, 0);
-        buildEdges(holeNodes, 1);
-        boundaryEdges = edges;
-    } else {
+    if (ext != ".csv")
         throw std::runtime_error("Unsupported file format: " + ext);
-    }
+
+    parseBoundaryCSV(filename);
+    if (nodes.empty())
+        throw std::runtime_error("No nodes loaded from " + filename);
+    registerGroup(0, "outer");
+    createOuterBoundary();
+    buildFlatNodeList();
+    buildEdges(boundaryNodes, 0);
+    boundaryEdges = edges;
+
     boundaryLayerSeeding();
     getInteriorNodeNumber(density);
 }
@@ -64,20 +54,63 @@ void Mesh::parseBoundaryCSV(const std::string& filename) {
     }
 }
 
-void Mesh::parseAerofoilDAT(const std::string& filename) {
-    std::ifstream file(filename);
-    if (!file.is_open())
-        throw std::runtime_error("Failed to open file: " + filename);
-    std::string line;
-    while (std::getline(file, line)) {
-        std::istringstream iss(line);
-        double x, y;
-        if (iss >> x >> y) {
-            holeNodes.push_back({x, y, static_cast<int>(holeNodes.size()), NodeType::Hole, 1});
-        } else {
-            std::cerr << "Warning: skipping line: " << line << "\n";
+void Mesh::generateNACA4(int digits4, int nPoints, double chord) {
+    if (digits4 < 0 || digits4 > 9999)
+        throw std::invalid_argument("NACA 4-digit code must be between 0000 and 9999");
+    if (nPoints < 2)
+        throw std::invalid_argument("NACA nPoints must be >= 2");
+    char buffer[5];
+    std::snprintf(buffer, sizeof(buffer), "%04d", digits4);
+    double m = (buffer[0] - '0') / 100.0;                              
+    double p = (buffer[1] - '0') / 10.0;                          
+    double t = ((buffer[2] - '0') * 10 + (buffer[3] - '0')) / 100.0;   
+
+    
+    auto surfacePoint = [&](double x, bool upper) -> Node {
+        double y_t = 5 * t * (0.2969 * std::sqrt(x) - 0.1260 * x - 0.3516 * x * x
+                              + 0.2843 * x * x * x - 0.1036 * x * x * x * x);
+        double y_c = 0.0, dyc_dx = 0.0;
+        if (m > 0.0 && p > 0.0) {                                     
+            if (x < p) {
+                y_c    = m / (p * p) * (2 * p * x - x * x);
+                dyc_dx = 2 * m / (p * p) * (p - x);
+            } else {
+                y_c    = m / ((1 - p) * (1 - p)) * ((1 - 2 * p) + 2 * p * x - x * x);
+                dyc_dx = 2 * m / ((1 - p) * (1 - p)) * (p - x);
+            }
         }
+        double theta = std::atan(dyc_dx);
+        double px = upper ? (x - y_t * std::sin(theta)) : (x + y_t * std::sin(theta));
+        double py = upper ? (y_c + y_t * std::cos(theta)) : (y_c - y_t * std::cos(theta));
+        return { px * chord, py * chord, static_cast<int>(holeNodes.size()), NodeType::Hole, 1 };
+    };
+
+    for (int i = nPoints; i >= 0; --i) {                              
+        double x = 0.5 * (1.0 - std::cos(M_PI * i / nPoints));
+        holeNodes.push_back(surfacePoint(x, true));
     }
+    for (int i = 1; i < nPoints; ++i) {                               
+        double x = 0.5 * (1.0 - std::cos(M_PI * i / nPoints));
+        holeNodes.push_back(surfacePoint(x, false));
+    }
+}
+
+
+void Mesh::buildAerofoilDomain(double density) {
+    if (holeNodes.empty())
+        throw std::runtime_error(
+            "buildAerofoilDomain: no aerofoil surface (call generateNACA4 first)");
+    registerGroup(0, "outer");
+    registerGroup(1, "aerofoil");
+    registerGroup(2, "inlet");
+    registerGroup(3, "outlet");
+    createAerofoilBoundary();
+    buildFlatNodeList();
+    buildEdges(boundaryNodes, 0);
+    buildEdges(holeNodes, 1);
+    boundaryEdges = edges;
+    boundaryLayerSeeding();
+    getInteriorNodeNumber(density);
 }
 
 void Mesh::createOuterBoundary() {

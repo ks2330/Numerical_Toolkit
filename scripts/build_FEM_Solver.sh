@@ -12,9 +12,14 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
 # ── 1. Configure ─────────────────────────────────────────────────────────────
+GENERATOR="Ninja"
+if [ -f "build/CMakeCache.txt" ] && ! grep -q "CMAKE_GENERATOR:INTERNAL=$GENERATOR" "build/CMakeCache.txt"; then
+    echo "[1/3] Existing build/ used a different generator — reconfiguring with $GENERATOR."
+    rm -rf build
+fi
 if [ ! -d "build" ]; then
-    echo "[1/3] Configuring CMake..."
-    cmake -S . -B build
+    echo "[1/3] Configuring CMake ($GENERATOR)..."
+    cmake -S . -B build -G "$GENERATOR"
 else
     echo "[1/3] Build directory already exists, skipping configure."
 fi

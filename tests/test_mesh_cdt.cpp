@@ -136,7 +136,8 @@ TEST(CDTAerofoilTest, PipelineProducesWatertightMesh) {
         SCOPED_TRACE("srand seed " + std::to_string(seed));
         std::srand(seed);
         Mesh mesh;
-        mesh.init(std::string(NT_DATA_DIR) + "/aerofoil.dat", 100.0);
+        mesh.generateNACA4(2412, 160);
+        mesh.buildAerofoilDomain(100.0);
         mesh.generateRandomNodes();
         DelaunayTriangulation algorithm;
         mesh.triangulate(algorithm);

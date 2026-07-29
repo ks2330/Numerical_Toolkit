@@ -6,6 +6,7 @@
 
 #include "app_support/app_FEM.h"
 #include "app_support/app_FEM_UI.h"
+#include "app_support/solver_api.h"
 #include "nt/finite_element_methods/FEM_Potential_Flow.h"
 #include "mesh_generation/algorithm_delaunay_triangulation.h"
 #include "mesh_generation/algorithm_advancing_front_triangulation.h"
@@ -45,9 +46,10 @@ Config config = {
 int main() {
     try {
         //meshgeneration::Mesh mesh = app_support::FEM::run::run_FEM(shape, nx, ny, segsPerUnit, numRandomNodes);
-        meshgeneration::Mesh mesh = app_support::FEM::run::initialise_from_CSV(config.aerofoilDAT, 100.0);
-        meshgeneration::DelaunayTriangulation algo;
-        mesh.triangulate(algo);
+        app_support::FvmConfig cfg;
+        cfg.naca    = {2412, 160};
+        cfg.density = 100.0;
+        meshgeneration::Mesh mesh = app_support::buildAerofoilMesh(cfg);   // NACA airfoil, triangulated + watertight
         app_support::FEM::UI::write_boundry_nodes_to_csv(mesh, mesh.nodes, config.boundaryCSV);
         app_support::FEM::UI::write_triangulation_to_csv(mesh, mesh.elements, mesh.nodes, config.triangulationCSV);
 
