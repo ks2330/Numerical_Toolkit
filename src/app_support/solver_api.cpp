@@ -8,6 +8,15 @@
 #include "nt/finite_volume_methods/FVM_mesh.h" 
 #include "nt/finite_volume_methods/FVM_solver.h"  
 
+#include "nt/finite_element_methods/FEM_Potential_Flow.h"
+#include "app_support/app_FEM.h"
+
+#include <algorithm>  
+#include <cstdlib>     
+#include "nt/solvers/potential_flow_solvers.h"       
+#include "nt/solvers/eigen_sparse_potential_flow.h"  
+#include "nt/Bench/bench.h"                            
+
 namespace app_support {
 
     meshgeneration::Mesh buildAerofoilMesh(const FvmConfig& cfg) {
@@ -31,6 +40,78 @@ namespace app_support {
         data.nodes = std::move(mesh.nodes);
         data.elements = std::move(mesh.elements);
         return data;
+    }
+
+
+    FemResult runPotential(const FvmConfig& cfg, meshgeneration::Mesh mesh)
+    {
+        FemResult result;
+        if (mesh.elements.empty())
+            mesh = buildAerofoilMesh(cfg);
+        const double alpha = cfg.alphaDeg * cfg.Pi / 180.0; 
+        const double U_inf = 1.0;
+        std::vector<double> phi = app_support::FEM::run::run_Potential_Flow(mesh, U_inf, alpha);
+        auto velocity = nt::fem::computeVelocityField(mesh, phi);
+        result.field  = nt::fem::computePressureCoefficients(velocity, U_inf);
+
+        result.mesh = std::move(mesh);  
+        return result;
+    }
+
+
+    FemResult runHeat(const HeatConfig& cfg) {
+        FemResult result;
+
+        meshgeneration::Mesh mesh;
+        mesh.buildRectangleDomain(cfg.width, cfg.height, cfg.density);
+        mesh.generateRandomNodes();
+        meshgeneration::DelaunayTriangulation algo;
+        mesh.triangulate(algo);
+
+        std::vector<double> T = app_support::FEM::run::run_FEM_Heat_Equation(
+            mesh, mesh.groupId("inlet"), cfg.T_inlet, mesh.groupId("outlet"), 0.0);
+
+        result.field = std::move(T);
+        result.mesh  = std::move(mesh);
+        return result;
+    }
+
+    BenchmarkResult runBenchmark(std::vector<double> densities, int reps, int warmup) {
+        BenchmarkResult result;
+        const nt::solvers::DefaultPotentialFlowSolver     dense;   
+        const nt::solvers::EigenSparsePotentialFlowSolver sparse;  
+        const double U_inf = 1.0, alpha = 0.0;
+
+        for (double d : densities) {
+            auto makeMesh = [&]() {
+                std::srand(42);
+                FvmConfig cfg;
+                cfg.density = d;
+                return buildAerofoilMesh(cfg);
+            };
+            meshgeneration::Mesh refMesh = makeMesh();
+            const int N = static_cast<int>(refMesh.nodes.size());
+            const std::vector<double> phiRef = dense.solve(refMesh, U_inf, alpha);  
+
+            std::vector<double> phiDense, phiSparse;
+            nt::bench::BenchStats ds = nt::bench::timed_runs(
+                makeMesh, [&](meshgeneration::Mesh& m){ return dense.solve(m, U_inf, alpha); },
+                reps, warmup, &phiDense);
+            nt::bench::BenchStats ss = nt::bench::timed_runs(
+                makeMesh, [&](meshgeneration::Mesh& m){ return sparse.solve(m, U_inf, alpha); },
+                reps, warmup, &phiSparse);
+
+            double diff = 0.0;
+            for (size_t i = 0; i < std::min(phiSparse.size(), phiRef.size()); ++i)
+                diff = std::max(diff, std::abs(phiSparse[i] - phiRef[i]));
+
+            result.numNodes.push_back(N);
+            result.denseTimes.push_back(ds.median_s);
+            result.sparseTimes.push_back(ss.median_s);
+            result.speedups.push_back(ss.median_s > 0.0 ? ds.median_s / ss.median_s : 0.0);
+            result.maxDiffs.push_back(diff);
+        }
+        return result;
     }
 
     FvmResult runFvm(const FvmConfig& cfg, ProgressCallback cb, meshgeneration::Mesh mesh) {

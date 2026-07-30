@@ -1,23 +1,15 @@
 #pragma once
 // ─────────────────────────────────────────────────────────────────────────────
 // solver_api — the in-memory, CSV-free entry point the pybind11 module wraps.
-//
-// Goal: ONE library function per solver that returns everything the GUI needs as
-// plain data (mesh arrays, per-cell fields, forces, residual history), so the
-// Python front-end never shells out or parses CSV. The existing CLIs
-// (apps/FVM_solver, apps/UI) can be refactored onto these too, keeping their CSV
-// output as a regression anchor.
-//
-// SCAFFOLD: the structs/signatures are the contract; the bodies in solver_api.cpp
-// are stubs for you to fill (they throw until implemented).
+
 // ─────────────────────────────────────────────────────────────────────────────
 #include <string>
 #include <vector>
 #include <functional>
 
 #include "mesh_generation/mesh_generation.h"
-#include "nt/finite_volume_methods/FVM_gas_model.h"   // nt::fvm::ConservativeState
-#include "nt/finite_volume_methods/FVM_forces.h"       // nt::fvm::Forces
+#include "nt/finite_volume_methods/FVM_gas_model.h"  
+#include "nt/finite_volume_methods/FVM_forces.h"      
 
 namespace app_support {
 
@@ -33,7 +25,7 @@ namespace app_support {
     };
 
     struct FvmConfig {
-        // Geometry: aerofoil generated in memory from a NACA 4-digit code (no file I/O).
+        // Geometry: 
         NacaSpec naca;                                        
         double   density = 300.0;                             
 
@@ -61,6 +53,12 @@ namespace app_support {
         bool                                    watertight = true;
     };
 
+    struct FemResult {
+        meshgeneration::Mesh mesh;
+        std::vector<double>  field; 
+    };
+
+
     using ProgressCallback = std::function<bool(int iter, double residual)>;
 
 
@@ -68,13 +66,29 @@ namespace app_support {
 
     FvmResult runFvm(const FvmConfig& cfg, ProgressCallback cb = {}, meshgeneration::Mesh mesh = {});
 
-    // ── FEM potential-flow airfoil — scaffold later  ─────────────────────
-    // struct PotentialResult { meshgeneration::Mesh mesh; std::vector<double> cp; };
-    // PotentialResult runPotential(const FvmConfig& cfg);
+    // ── FEM potential-flow airfoil ──────────────────────────────────────────
+    FemResult runPotential(const FvmConfig& cfg, meshgeneration::Mesh mesh = {});
 
-    // ── FEM 2-D steady heat — scaffold later  ────────────────────────────
-    // struct HeatConfig { /* geometry + T_inlet/T_outlet + density */ };
-    // struct HeatResult { meshgeneration::Mesh mesh; std::vector<double> temperature; };
-    // HeatResult runHeat(const HeatConfig& cfg);
+
+    struct HeatConfig {
+        double width    = 4.0;
+        double height   = 2.0;
+        double T_inlet  = 100.0;  
+        double density  = 10.0;    
+    };
+
+    FemResult runHeat(const HeatConfig& cfg);
+
+    // ── Solver-efficiency benchmark (dense Gaussian vs Eigen sparse LDLT) ─────
+    struct BenchmarkResult {
+        std::vector<int>    numNodes;    
+        std::vector<double> denseTimes;   
+        std::vector<double> sparseTimes;   
+        std::vector<double> speedups;      
+        std::vector<double> maxDiffs;      
+    };
+
+    BenchmarkResult runBenchmark(std::vector<double> densities = {5.0, 10.0, 20.0},
+                                 int reps = 3, int warmup = 1);   
 
 }
