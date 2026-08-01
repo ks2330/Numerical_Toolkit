@@ -142,14 +142,21 @@ solve on a background thread, and see the field rendered in-memory with matplotl
   <img src="docs/images/cfd_studio_Steady_Heat.png" alt="Steady-state heat field, validated against the analytic solution to ~1e-12" width="49%">
 </p>
 
+### Run it
+
+**Download — no build, no Python:** grab `NumericalToolkitStudio-win64.zip` from the
+[**latest release**](https://github.com/ks2330/Numerical_Toolkit/releases/latest), unzip, and run
+`NumericalToolkitStudio.exe`. Nothing to install.
+
+**Or run from source** (needs Python 3.14; building the `pycfd` module needs MSVC — full steps in
+[DESKTOP_APP.md](DESKTOP_APP.md)):
+
 ```powershell
 py -3.14 -m venv .venv
 .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 python python\cfd_studio\numerical_toolkit_studio.py
 ```
-
-Building the `pycfd` module and full setup: [DESKTOP_APP.md](DESKTOP_APP.md).
 
 
 ## Build & run
@@ -199,8 +206,6 @@ Ninja · [GoogleTest](https://github.com/google/googletest) · GitHub Actions CI
 
 ## Roadmap
 
-- **Standalone desktop build** — package Numerical Toolkit Studio as a one-click Windows
-  executable (PyInstaller) so it runs with no Python or venv installed.
 - **Higher-fidelity FVM** — second-order MUSCL reconstruction and near-wall refinement to
   drive down numerical drag.
 - **Advancing-Front meshing** — finish the alternative triangulator (currently experimental;
