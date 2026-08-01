@@ -147,10 +147,27 @@ PYBIND11_MODULE(pycfd, m) {
 
 
 
-    m.def("run_heat", [](app_support::HeatConfig cfg) {
-        py::gil_scoped_release rel;
-        return app_support::runHeat(cfg);
+    m.def("build_heat_mesh", [](const app_support::HeatConfig& cfg) {
+        meshgeneration::Mesh mesh;
+        {
+            py::gil_scoped_release rel;
+            mesh = app_support::buildHeatMesh(cfg);
+        }
+        return mesh;
     }, py::arg("cfg"));
+
+    m.def("run_heat", [](app_support::HeatConfig cfg, py::object mesh) {
+        app_support::FemResult r;
+        if (mesh.is_none()) {
+            py::gil_scoped_release rel;
+            r = app_support::runHeat(cfg);
+        } else {
+            meshgeneration::Mesh& held = mesh.cast<meshgeneration::Mesh&>();
+            py::gil_scoped_release rel;
+            r = app_support::runHeat(cfg, std::move(held));
+        }
+        return r;
+    }, py::arg("cfg"), py::arg("mesh") = py::none());
 
     m.def("run_benchmark", [](std::vector<double> densities, int reps, int warmup) {
         py::gil_scoped_release rel;

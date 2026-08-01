@@ -1,11 +1,13 @@
 # Build output (build/, build-release/, build-ninja/, etc.)
 build*/
 
-# Generated results (CSVs, PNGs, STEPs) — folder structure kept via .gitkeep
+# PyInstaller packaging output
+dist/
+*.zip
+
+# Generated results (CSVs, PNGs) — folder structure kept via .gitkeep
 results/csv/*.csv
 results/png/*.png
-results/step/*.step
-results/metrics/*.csv
 
 # CMake generated files
 CMakeCache.txt
@@ -42,6 +44,9 @@ compile_commands.json
 # VS Code specific
 .vscode/
 
+# Claude Code local settings (permission allowlist churns; not shared config)
+.claude/
+
 # Environment variables and secrets - NEVER commit these
 .env
 .env.local
@@ -61,13 +66,14 @@ secrets.toml
 config/secrets*
 
 # Animation scripts (local social media content, not part of the codebase)
-apps/animations/
+docs/animations/
 
 # Python artifacts (project has Python scripts)
 __pycache__/
 *.pyc
 *.pyo
-*.pyd            # compiled pybind11 extension (pycfd) — a build artifact, never commit
+# compiled pybind11 extension (pycfd) — a build artifact, never commit
+*.pyd
 .venv/
 venv/
 env/

@@ -19,11 +19,6 @@ namespace app_support {
         int nPoints  = 160;   
     };
 
-    struct meshData {
-        std::vector<meshgeneration::Node> nodes;
-        std::vector<meshgeneration::Element> elements;
-    };
-
     struct FvmConfig {
         // Geometry: 
         NacaSpec naca;                                        
@@ -37,9 +32,10 @@ namespace app_support {
         double cfl = 0.5, tolerance = 1e-6;
         int    maxIters = 100000;
 
-        // Output CSVs (for regression / debugging; GUI uses in-memory data)
-        std::string pressureFieldCSV = "results/csv/fvm_pressure_field.csv";
-        std::string forcesCSV        = "results/csv/fvm_forces.csv";
+        // Optional debug CSV dumps — empty = in-memory only (the GUI path).
+        // Set a path explicitly to also write the field / forces to disk.
+        std::string pressureFieldCSV = "";
+        std::string forcesCSV        = "";
         double Pi = 3.14159265358979323846;
     };
 
@@ -77,7 +73,9 @@ namespace app_support {
         double density  = 10.0;    
     };
 
-    FemResult runHeat(const HeatConfig& cfg);
+    meshgeneration::Mesh buildHeatMesh(const HeatConfig& cfg);
+
+    FemResult runHeat(const HeatConfig& cfg, meshgeneration::Mesh mesh = {});
 
     // ── Solver-efficiency benchmark (dense Gaussian vs Eigen sparse LDLT) ─────
     struct BenchmarkResult {

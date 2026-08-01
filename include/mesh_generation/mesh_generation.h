@@ -107,7 +107,6 @@ public:
         for (int i = 0; i < NumBins; ++i) {
             f << i << "," << bins[i] << "\n";
         }
-        std::cout << "Metric distribution written to " << outputFile << "\n";
     }
     std::vector<Element> bowyerWatson();
     void advancingFront();

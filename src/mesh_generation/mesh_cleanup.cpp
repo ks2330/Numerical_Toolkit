@@ -9,7 +9,6 @@
 namespace meshgeneration {
 
 void Mesh::improveMesh() {
-    std::cout << "Improving mesh quality...\n";
     bool foundBadElement = true;
     int iteration = 0;
     while (foundBadElement && iteration < 100) {
@@ -34,7 +33,6 @@ void Mesh::improveMesh() {
 
 void Mesh::laplacianSmoothing(int iterations) {
     if (nodes.empty()) return;
-    std::cout << "Laplacian smoothing...\n";
     for (int i = 0; i < iterations; ++i) {
         std::vector<std::pair<double,double>> newPos(nodes.size());
         for (int n = 0; n < static_cast<int>(neighbours.size()); ++n) {

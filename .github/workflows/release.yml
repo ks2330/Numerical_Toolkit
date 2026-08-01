@@ -1,0 +1,57 @@
+name: Release
+
+# Builds the standalone Windows desktop app and attaches it to the GitHub Release.
+# Runs only on version tags (e.g. `git tag v1.0.0 && git push --tags`), plus manual
+# dispatch (which still produces the zip as a downloadable build artifact).
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write          # required to upload the zip as a Release asset
+
+jobs:
+  windows-desktop:
+    # Pinned to 2022 so the "Visual Studio 17 2022" generator in build-release.ps1 is present.
+    runs-on: windows-2022
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.14
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+
+      - name: Cache Eigen (FetchContent)
+        uses: actions/cache@v4
+        with:
+          path: build-py/_deps
+          key: releasedeps-${{ hashFiles('CMakeLists.txt') }}
+          restore-keys: releasedeps-
+
+      - name: Create venv and install dependencies
+        shell: pwsh
+        run: |
+          python -m venv .venv
+          .\.venv\Scripts\python.exe -m pip install --upgrade pip
+          .\.venv\Scripts\python.exe -m pip install -r requirements.txt
+
+      - name: Build standalone app (pycfd + PyInstaller + zip)
+        shell: pwsh
+        run: .\build-release.ps1
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: NumericalToolkitStudio-win64
+          path: NumericalToolkitStudio-win64.zip
+
+      - name: Attach to GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: NumericalToolkitStudio-win64.zip

@@ -33,15 +33,6 @@ namespace app_support {
         nt::fvm::repairMissingBoundaryEdges(mesh.elements, mesh.boundaryEdges);
         return mesh;
     }
-    
-    meshData getMeshData(const FvmConfig& cfg) {
-        meshgeneration::Mesh mesh = buildAerofoilMesh(cfg);
-        meshData data;
-        data.nodes = std::move(mesh.nodes);
-        data.elements = std::move(mesh.elements);
-        return data;
-    }
-
 
     FemResult runPotential(const FvmConfig& cfg, meshgeneration::Mesh mesh)
     {
@@ -59,14 +50,20 @@ namespace app_support {
     }
 
 
-    FemResult runHeat(const HeatConfig& cfg) {
-        FemResult result;
-
+    meshgeneration::Mesh buildHeatMesh(const HeatConfig& cfg) {
         meshgeneration::Mesh mesh;
         mesh.buildRectangleDomain(cfg.width, cfg.height, cfg.density);
         mesh.generateRandomNodes();
         meshgeneration::DelaunayTriangulation algo;
         mesh.triangulate(algo);
+        return mesh;
+    }
+
+    FemResult runHeat(const HeatConfig& cfg, meshgeneration::Mesh mesh) {
+        FemResult result;
+
+        if (mesh.elements.empty())
+            mesh = buildHeatMesh(cfg);
 
         std::vector<double> T = app_support::FEM::run::run_FEM_Heat_Equation(
             mesh, mesh.groupId("inlet"), cfg.T_inlet, mesh.groupId("outlet"), 0.0);
