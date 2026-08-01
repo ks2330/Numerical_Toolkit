@@ -55,7 +55,13 @@ PYBIND11_MODULE(pycfd, m) {
         .def_readwrite("max_iters", &app_support::FvmConfig::maxIters)
         .def_readwrite("pressure_field_csv", &app_support::FvmConfig::pressureFieldCSV)
         .def_readwrite("forces_csv", &app_support::FvmConfig::forcesCSV);
-    
+
+    py::class_<app_support::HeatConfig>(m, "HeatConfig")
+        .def(py::init<>())
+        .def_readwrite("width",    &app_support::HeatConfig::width)
+        .def_readwrite("height",   &app_support::HeatConfig::height)
+        .def_readwrite("t_inlet",  &app_support::HeatConfig::T_inlet)
+        .def_readwrite("density",  &app_support::HeatConfig::density);
 
     py::class_<meshgeneration::Mesh>(m, "Mesh")
         .def_property_readonly("nodes", [](const meshgeneration::Mesh& mesh) {
@@ -93,6 +99,20 @@ PYBIND11_MODULE(pycfd, m) {
         .def_property_readonly("watertight", [](const app_support::FvmResult& r) { return r.watertight; });
 
 
+    py::class_<app_support::FemResult>(m, "FemResult")
+        .def_property_readonly("nodes",    [](const app_support::FemResult& r){ return nodesToArray(r.mesh.nodes); })
+        .def_property_readonly("elements", [](const app_support::FemResult& r){ return elementsToArray(r.mesh.elements); })
+        .def_property_readonly("field",    [](const app_support::FemResult& r){ return py::array_t<double>(r.field.size(), r.field.data()); });
+
+    py::class_<app_support::BenchmarkResult>(m, "BenchmarkResult")
+        .def_property_readonly("num_nodes",    [](const app_support::BenchmarkResult& r){ return py::array_t<int>(r.numNodes.size(), r.numNodes.data()); })
+        .def_property_readonly("dense_times",  [](const app_support::BenchmarkResult& r){ return py::array_t<double>(r.denseTimes.size(), r.denseTimes.data()); })
+        .def_property_readonly("sparse_times", [](const app_support::BenchmarkResult& r){ return py::array_t<double>(r.sparseTimes.size(), r.sparseTimes.data()); })
+        .def_property_readonly("speedups",     [](const app_support::BenchmarkResult& r){ return py::array_t<double>(r.speedups.size(), r.speedups.data()); })
+        .def_property_readonly("max_diffs",    [](const app_support::BenchmarkResult& r){ return py::array_t<double>(r.maxDiffs.size(), r.maxDiffs.data()); });
+
+
+
     m.def("naca_outline", [](int digits4, int n_points) {
         meshgeneration::Mesh mesh;
         mesh.generateNACA4(digits4, n_points);
@@ -100,8 +120,60 @@ PYBIND11_MODULE(pycfd, m) {
     }, py::arg("digits4"), py::arg("n_points") = 160);
 
     m.def("build_aerofoil_mesh", [](const app_support::FvmConfig& cfg) {
-        return app_support::buildAerofoilMesh(cfg);
+        meshgeneration::Mesh mesh;
+        {
+            py::gil_scoped_release rel;     // without this a GUI thread stalls for the whole build
+            mesh = app_support::buildAerofoilMesh(cfg);
+        }
+        return mesh;
     }, py::arg("cfg"));
+
+
+
+    
+    m.def("run_potential", [](app_support::FvmConfig cfg, py::object mesh) {
+        app_support::FemResult r;
+        if (mesh.is_none()) {
+            py::gil_scoped_release rel;
+            r = app_support::runPotential(cfg);
+        } else {
+            meshgeneration::Mesh& held = mesh.cast<meshgeneration::Mesh&>();
+            py::gil_scoped_release rel;
+            r = app_support::runPotential(cfg, std::move(held));
+        }
+        return r;
+    }, py::arg("cfg"), py::arg("mesh") = py::none());
+
+
+
+
+    m.def("build_heat_mesh", [](const app_support::HeatConfig& cfg) {
+        meshgeneration::Mesh mesh;
+        {
+            py::gil_scoped_release rel;
+            mesh = app_support::buildHeatMesh(cfg);
+        }
+        return mesh;
+    }, py::arg("cfg"));
+
+    m.def("run_heat", [](app_support::HeatConfig cfg, py::object mesh) {
+        app_support::FemResult r;
+        if (mesh.is_none()) {
+            py::gil_scoped_release rel;
+            r = app_support::runHeat(cfg);
+        } else {
+            meshgeneration::Mesh& held = mesh.cast<meshgeneration::Mesh&>();
+            py::gil_scoped_release rel;
+            r = app_support::runHeat(cfg, std::move(held));
+        }
+        return r;
+    }, py::arg("cfg"), py::arg("mesh") = py::none());
+
+    m.def("run_benchmark", [](std::vector<double> densities, int reps, int warmup) {
+        py::gil_scoped_release rel;
+        return app_support::runBenchmark(densities, reps, warmup);
+    }, py::arg("densities") = std::vector<double>{5.0, 10.0, 20.0},
+       py::arg("reps") = 3, py::arg("warmup") = 1);
 
     m.def("run_fvm", [](app_support::FvmConfig cfg, py::object cb, py::object mesh) {
         app_support::ProgressCallback ccb;
@@ -114,11 +186,11 @@ PYBIND11_MODULE(pycfd, m) {
         app_support::FvmResult r;
         if (mesh.is_none()) {
             py::gil_scoped_release rel;
-            r = app_support::runFvm(cfg, ccb);                    // no mesh -> build internally
+            r = app_support::runFvm(cfg, ccb);           
         } else {
             meshgeneration::Mesh& held = mesh.cast<meshgeneration::Mesh&>();
             py::gil_scoped_release rel;
-            r = app_support::runFvm(cfg, ccb, std::move(held));   // reuse (consumes it)
+            r = app_support::runFvm(cfg, ccb, std::move(held)); 
         }
         return r;
     }, py::arg("cfg"), py::arg("cb") = py::none(), py::arg("mesh") = py::none());

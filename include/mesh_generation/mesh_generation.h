@@ -75,6 +75,12 @@ public:
 
     void buildAerofoilDomain(double density);
 
+    // Build a solid rectangular FEM domain (no hole): a densified rectangle boundary with
+    // the left edge tagged "inlet", right edge "outlet", top/bottom "outer", plus the
+    // interior node budget. Pair with generateRandomNodes() + triangulate() (see
+    // app_support::runHeat). For the steady-heat solver.
+    void buildRectangleDomain(double width, double height, double density);
+
     void metricAngles(const std::string& outputFile);
     void metricAspectRatios(const std::string& outputFile);
 
@@ -101,7 +107,6 @@ public:
         for (int i = 0; i < NumBins; ++i) {
             f << i << "," << bins[i] << "\n";
         }
-        std::cout << "Metric distribution written to " << outputFile << "\n";
     }
     std::vector<Element> bowyerWatson();
     void advancingFront();

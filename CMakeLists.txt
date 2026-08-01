@@ -45,7 +45,6 @@ add_library(numerical_toolkit
 
     src/app_support/app_forward_euler.cpp
     src/app_support/app_FEM.cpp
-    src/app_support/app_FEM_UI.cpp
 
     src/app_support/solver_api.cpp
 )
@@ -69,8 +68,6 @@ option(BUILD_TESTS  "Build the Google Test suite"        ON)
 option(BUILD_APPS   "Build the CLI apps"                 ON)
 option(BUILD_PYTHON "Build the pycfd Python bindings"    OFF)
 
-file(MAKE_DIRECTORY ${CMAKE_SOURCE_DIR}/results/metrics)
-
 if(BUILD_TESTS)
     enable_testing()
     FetchContent_Declare(
@@ -83,7 +80,6 @@ if(BUILD_TESTS)
 endif()
 
 if(BUILD_APPS)
-    add_subdirectory(apps/UI)
     add_subdirectory(apps/FVM_solver)
 endif()
 

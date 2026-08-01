@@ -113,6 +113,33 @@ void Mesh::buildAerofoilDomain(double density) {
     getInteriorNodeNumber(density);
 }
 
+void Mesh::buildRectangleDomain(double width, double height, double density) {
+    nodes.clear(); edges.clear(); boundaryEdges.clear(); elements.clear();
+    boundaryNodes.clear(); holeNodes.clear(); internalNodes.clear();
+    boundaryGroups.clear();
+
+    registerGroup(0, "outer");
+    registerGroup(2, "inlet");
+    registerGroup(3, "outlet");
+
+    // Densified rectangle boundary; tag left edge = inlet, right edge = outlet, rest = outer,
+    // so the heat solver's Dirichlet BCs land on the right nodes (it matches by group_id).
+    std::vector<Node> boundary = shapegeneration::shapes::rectangle(width, height, 8);
+    const double eps = 1e-9;
+    for (auto& n : boundary) {
+        n.type = NodeType::Boundary;
+        if      (n.x <= eps)         n.group_id = 2;   // inlet  (left)
+        else if (n.x >= width - eps) n.group_id = 3;   // outlet (right)
+        else                         n.group_id = 0;   // outer  (top / bottom)
+    }
+    boundaryNodes = boundary;
+
+    buildFlatNodeList();
+    buildEdges(boundaryNodes, 0);
+    boundaryEdges = edges;
+    getInteriorNodeNumber(density);
+}
+
 void Mesh::createOuterBoundary() {
     if (nodes.empty())
         throw std::runtime_error("No boundary nodes to create outer boundary.");

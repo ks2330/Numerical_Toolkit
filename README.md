@@ -1,16 +1,18 @@
 # Numerical Toolkit
 
-**A 2D computational fluid dynamics toolkit in modern C++ — unstructured mesh generation, a finite-volume Euler airfoil solver, and finite-element potential-flow and heat solvers, built from scratch on Eigen.**
+**A 2D computational fluid dynamics toolkit in modern C++ — unstructured mesh generation, a finite-volume Euler airfoil solver, and finite-element potential-flow and heat solvers, built from scratch on Eigen and driven by an interactive Python desktop app.**
 
 [![CI](https://github.com/ks2330/Numerical_Toolkit/actions/workflows/ci.yml/badge.svg)](https://github.com/ks2330/Numerical_Toolkit/actions/workflows/ci.yml)
 ![C++20](https://img.shields.io/badge/C%2B%2B-20-blue.svg)
 ![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
 
 <p align="center">
-  <img src="docs/images/fvm_solution.png" alt="FVM Euler pressure and Mach fields around an airfoil" width="85%">
+  <img src="docs/images/fvm_solution.png" alt="FVM Euler pressure field around a NACA 2412 airfoil, C_L ≈ 0.43 and C_D ≈ 0.10" width="49%">
+  <img src="docs/images/fvm_solution_convergence.png" alt="Solver convergence — residual driven to 1e-6 over 8865 iterations" width="49%">
 </p>
 
-Pressure and Mach fields from the finite-volume Euler solver around an airfoil at M = 0.3, α = 2°.
+Finite-volume Euler solve of a NACA 2412 at M = 0.3, α = 2°: the pressure field over a watertight
+surface (C_L ≈ 0.43, C_D ≈ 0.10) and the residual converging to 1e-6 in 8,865 iterations.
 
 ---
 
@@ -21,15 +23,16 @@ airfoils on **unstructured triangular meshes**. Everything from the mesh generat
 flux functions is implemented directly on top of [Eigen](https://eigen.tuxfamily.org) —
 no meshing or solver frameworks — and covered by a GoogleTest suite that runs in CI.
 
-The project is organised as a static library (`numerical_toolkit`) plus small command-line
-driver applications, with the solver internals kept free of I/O so they can be driven
-directly (the roadmap below builds an interactive desktop app on exactly this seam).
+The project is organised as a static library (`numerical_toolkit`) with the solver internals
+kept free of I/O, so they can be driven directly — by a command-line driver, a `pybind11`
+Python module (`pycfd`), and an interactive desktop app (**Numerical Toolkit Studio**, below),
+all with no CSV round-trip.
 
 ## Highlights
 
-- **Unstructured mesher**: Bowyer–Watson Delaunay triangulation, an Advancing-Front
-  alternative, Poisson-disc interior sampling, boundary-layer seeding around the airfoil,
-  and **constrained Delaunay edge recovery** that guarantees a watertight surface.
+- **Unstructured mesher**: Bowyer–Watson Delaunay triangulation (with an experimental
+  Advancing-Front path), Poisson-disc interior sampling, boundary-layer seeding around the
+  airfoil, and **constrained Delaunay edge recovery** that guarantees a watertight surface.
 - **Finite-volume Euler solver**: cell-centred, first-order, matrix-free — Rusanov
   (local Lax–Friedrichs) flux, explicit local time-stepping, slip-wall and far-field
   boundary conditions, and aerodynamic force/coefficient integration (C_L, C_D).
@@ -38,8 +41,11 @@ directly (the roadmap below builds an interactive desktop app on exactly this se
   transient heat solver (forward-Euler and Crank–Nicolson).
 - **Quality tooling**: quadtree spatial indexing, quality refinement + Laplacian
   smoothing, and mesh-quality metrics (min-angle / aspect-ratio distributions).
+- **Interactive desktop app**: a PySide6 GUI (Numerical Toolkit Studio) driving every solver
+  through a compiled `pybind11` module — live convergence, in-memory matplotlib rendering, and
+  a dense-vs-sparse solver benchmark (up to ~3,900× faster), all with no CSV round-trip.
 - **Engineering**: CMake + FetchContent (reproducible Eigen / GoogleTest), 13 GoogleTest
-  suites, and GitHub Actions CI.
+  suites (155 tests), and GitHub Actions CI.
 
 ## Solvers
 
@@ -65,42 +71,85 @@ Dirichlet boundary conditions.
 
 ## Meshing
 
-The mesher is the backbone of the toolkit: it takes an airfoil surface (a Selig-format
-`.dat` file) plus a far-field boundary, samples the interior, triangulates, removes the
-hole interior, and recovers the constrained boundary so the airfoil surface is watertight —
-a prerequisite for correct finite-volume force integration.
+The mesher is the backbone of the toolkit: it generates an airfoil surface from a NACA
+4-digit code, wraps it in a far-field boundary, samples the interior, triangulates, removes
+the hole interior, and recovers the constrained boundary so the airfoil surface is
+watertight — a prerequisite for correct finite-volume force integration.
 
 <p align="center">
   <img src="docs/images/fvm_mesh.png" alt="Unstructured triangular mesh around an airfoil" width="49%">
-  <img src="docs/images/mesh_quality_comparison.png" alt="Mesh quality before and after improvement" width="49%">
+  <img src="docs/images/mesh_quality_comparison.png" alt="Mesh quality — smallest-angle and aspect-ratio distributions" width="49%">
 </p>
+
+<p align="center">
+  <img src="docs/images/mesh_improvement.gif" alt="Iterative mesh-quality refinement and Laplacian smoothing" width="60%">
+</p>
+
+Iterative refinement and Laplacian smoothing raising triangle quality during meshing.
 
 ## Results
 
-For a NACA-type section at **M = 0.3, α = 2°**, the finite-volume Euler solver produces
-**C_L ≈ 0.39** and **C_D ≈ 0.16**. The nonzero drag is *numerical* — a first-order Rusanov
-scheme is diffusive, whereas the true inviscid (d'Alembert) drag is ~0; reducing it is a
-fidelity item on the roadmap (second-order MUSCL reconstruction + near-wall refinement).
+For a **NACA 2412** at **M = 0.3, α = 2°**, the finite-volume Euler solver converges to a
+residual of **~1e-6** (8,865 iterations) and reports **C_L ≈ 0.43**, **C_D ≈ 0.10**. The lift
+agrees with thin-airfoil theory — 2π(α − α₀) with a zero-lift angle α₀ ≈ −2° for 2% camber
+gives C_L ≈ 0.44 — and the constrained-Delaunay edge recovery keeps the airfoil surface
+**watertight**, so the pressure force is integrated over a truly closed body, not a leaky one.
 
-## Desktop app (CFD Studio)
+The residual drag is numerical rather than physical (the true inviscid, d'Alembert drag is
+zero): it is the dissipation of the **robust first-order Rusanov flux**, the trade-off for its
+stability. The roadmap's **second-order MUSCL reconstruction** and near-wall refinement are
+accuracy upgrades that would tighten it further — the current scheme is already a solid,
+convergent baseline.
 
-An interactive PySide6 front-end drives the solvers through a compiled **pybind11** module
-(`pycfd`): pick the airfoil (NACA 4-digit) and flow parameters, run the solve on a background
-thread with a live convergence plot, and see the pressure/Mach field rendered in-memory with
-matplotlib — no CSV round-trip.
+## Performance — sparse vs dense linear solve
+
+The finite-element solvers assemble a sparse, symmetric positive-definite system. The
+original solver used textbook **dense Gaussian elimination** — O(N³) time, O(N²) memory —
+which dominates runtime as the mesh grows. Swapping in Eigen's **sparse Cholesky**
+(`SimplicialLDLT`) solves the *same* system, to machine precision, orders of magnitude faster:
+
+| Nodes | Dense Gaussian (ms) | Sparse LDLᵀ (ms) | Speed-up | max nodal Δφ |
+|------:|--------------------:|-----------------:|---------:|-------------:|
+| 2,573 |               3,854 |             1.36 |   2,824× |      1.4e-12 |
+| 2,714 |               4,493 |             1.51 |   2,970× |      7.4e-12 |
+| 2,995 |               6,840 |             1.73 |   3,946× |      1.9e-12 |
+
+*Median of 3 timed runs, potential-flow solve on the airfoil mesh. `max nodal Δφ` is the
+largest difference between the two solvers' potentials — agreement to machine precision, so
+this is a pure speed win.* Dense cost grows with the **cube** of the node count while the
+sparse solve stays near-linear, so the gap widens with resolution. The benchmark is exposed
+as its own tab in Numerical Toolkit Studio:
 
 <p align="center">
-  <img src="docs/images/cfd_studio.png" alt="CFD Studio — interactive pressure field around an airfoil" width="85%">
+  <img src="docs/images/benchmark_scaling.png" alt="Dense Gaussian vs Eigen sparse LDLᵀ solve time on a log scale — the dense curve tracks pure N³ while the sparse solve stays flat, ~3,900× apart at 3,000 nodes" width="80%">
+</p>
+
+## Desktop app (Numerical Toolkit Studio)
+
+An interactive PySide6 front-end drives every solver through a compiled **pybind11** module
+(`pycfd`) — no CSV round-trip, no subprocess. Each tab configures one solver: the
+finite-volume Euler airfoil (live convergence plot + C_L / C_D), finite-element potential
+flow with an Euler-vs-potential Cₚ comparison, 2D steady-state heat conduction, and a
+dense-vs-sparse solver benchmark. Pick a NACA 4-digit section and flow parameters, run the
+solve on a background thread, and see the field rendered in-memory with matplotlib.
+
+<p align="center">
+  <img src="docs/images/cfd_studio_FVM_EULER.png" alt="Numerical Toolkit Studio — FVM Euler tab showing the pressure field around the airfoil with a converged C_L / C_D readout" width="90%">
+</p>
+
+<p align="center">
+  <img src="docs/images/cfd_studio_Potential_Flow.png" alt="Potential-flow Cp field around a NACA section" width="49%">
+  <img src="docs/images/cfd_studio_Steady_Heat.png" alt="Steady-state heat field, validated against the analytic solution to ~1e-12" width="49%">
 </p>
 
 ```powershell
 py -3.14 -m venv .venv
 .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
-python python\cfd_studio\app.py
+python python\cfd_studio\numerical_toolkit_studio.py
 ```
 
-Building the `pycfd` module and full setup: [docs/desktop-app.md](docs/desktop-app.md).
+Building the `pycfd` module and full setup: [DESKTOP_APP.md](DESKTOP_APP.md).
 
 
 ## Build & run
@@ -131,14 +180,15 @@ include/          public headers for the numerical_toolkit library
   nt/finite_methods/            forward-Euler / Crank–Nicolson (1D heat)
   nt/finite_element_methods/    FEM stiffness, potential flow, heat
   nt/finite_volume_methods/     gas model, mesh/faces, flux, solver, forces
+  nt/solvers/                   dense + Eigen-sparse potential-flow solvers (benchmark)
   mesh_generation/              mesh types, triangulation, sampling, metrics
 src/              library implementation (mirrors include/)
-apps/
-  UI/             steady-state FEM potential-flow driver (CLI)
-  FVM_solver/     2D Euler finite-volume airfoil driver (CLI)
-tests/            GoogleTest suites (13 executables, run via ctest)
-results/          airfoil input (results/dat) + generated CSV/PNG outputs
-docs/             architecture notes and figures
+apps/FVM_solver/  2D Euler finite-volume airfoil driver (CLI)
+bindings/         pybind11 module (pycfd) exposing the solvers to Python
+python/cfd_studio/  Numerical Toolkit Studio — PySide6 desktop app
+tests/            GoogleTest suites (13 executables, 155 tests, run via ctest)
+results/          generated CSV / PNG outputs
+docs/             figures and animations
 ```
 
 ## Tech stack
@@ -149,15 +199,13 @@ Ninja · [GoogleTest](https://github.com/google/googletest) · GitHub Actions CI
 
 ## Roadmap
 
-- **Interactive desktop app** — expose the solvers to Python via **pybind11** and drive a
-  **PySide6 + matplotlib** GUI that renders results in-memory (no CSV round-trip), with
-  editable airfoil shapes (NACA 4-digit generator) and live flow parameters, packaged as a
-  standalone Windows executable.
+- **Standalone desktop build** — package Numerical Toolkit Studio as a one-click Windows
+  executable (PyInstaller) so it runs with no Python or venv installed.
 - **Higher-fidelity FVM** — second-order MUSCL reconstruction and near-wall refinement to
   drive down numerical drag.
+- **Advancing-Front meshing** — finish the alternative triangulator (currently experimental;
+  constrained Delaunay is the default).
 - **Lifting potential flow** — Kutta condition / trailing-edge circulation.
-
-See [docs/architecture.md](docs/architecture.md) for the full design notes.
 
 ## License
 
